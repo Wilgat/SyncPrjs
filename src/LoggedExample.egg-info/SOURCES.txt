@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/setup.py
+src/LoggedExample.egg-info/PKG-INFO
+src/LoggedExample.egg-info/SOURCES.txt
+src/LoggedExample.egg-info/dependency_links.txt
+src/LoggedExample.egg-info/entry_points.txt
+src/LoggedExample.egg-info/requires.txt
+src/LoggedExample.egg-info/top_level.txt
+src/SyncPrjs/__init__.py
+src/SyncPrjs/__main__.py
+src/SyncPrjs/cli.py
