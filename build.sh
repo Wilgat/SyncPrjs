@@ -2,12 +2,12 @@
 set -eu
 
 # =============================================
-# logged-example build script — by Wong Chun Fai (wilgat)
+# SyncPrjs build script — by Wong Chun Fai (wilgat)
 # Pure POSIX sh, egg-info fully obliterated
 # =============================================
 
-PROJECT="logged-example"
-KG_NAME="logged_example"
+PROJECT="SyncPrjs"
+PKG_NAME="sync-prjs"
 
 # Get version from package (fallback to unknown)
 VERSION=$(python3 - <<'PY'
@@ -25,7 +25,7 @@ except Exception:
 
 PY
 ) || VERSION="unknown"
-echo "logged-example build tool (v$VERSION)"
+echo "SyncPrjs build tool (v$VERSION)"
 echo "========================================"
 
 show_help() {
@@ -62,7 +62,7 @@ do_setup() {
 do_clean() {
     echo "Cleaning project (including all egg-info)..."
     rm -rf build dist .eggs .pytest_cache
-    rm -rf logged-example.egg-info src/logged-example.egg-info src/logged-example.*.egg-info 2>/dev/null || true
+    rm -rf SyncPrjs.egg-info src/SyncPrjs.egg-info src/SyncPrjs.*.egg-info 2>/dev/null || true
     find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
     find . -type f -name "._*" -delete 2>/dev/null || true
     echo "Clean complete — all egg-info destroyed"
@@ -94,7 +94,7 @@ do_git() {
 
 do_tag() {
     if [ "$VERSION" = "unknown" ]; then
-        echo "ERROR: Cannot determine version. Is __version__ set in src/logged-example/__init__.py?"
+        echo "ERROR: Cannot determine version. Is __version__ set in src/SyncPrjs/__init__.py?"
         exit 1
     fi
 

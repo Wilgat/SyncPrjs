@@ -15,15 +15,15 @@ authors = [
 keywords = ["logging", "sudo", "chronicle", "example"]
 
 dependencies = [
-    "ChronicleLogger>=1.1.0",
+    "ChronicleLogger>=1.2.3",
 ]
 
 # Official project links (this is what shows on PyPI!)
 [project.urls]
-Homepage = "https://github.com/Wilgat/LoggedExample"
-Repository = "https://github.com/Wilgat/LoggedExample"
-Issues = "https://github.com/Wilgat/LoggedExample/issues"
+Homepage = "https://github.com/Wilgat/SyncPrjs"
+Repository = "https://github.com/Wilgat/SyncPrjs"
+Issues = "https://github.com/Wilgat/SyncPrjs/issues"
 
-# This makes `logged-example` command available after pip install
+# This makes `sync-prjs` command available after pip install
 [project.scripts]
-logged-example = "LoggedExample.cli:main"
+sync-prjs = "SyncPrjs.cli:main"
