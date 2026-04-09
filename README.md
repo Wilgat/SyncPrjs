@@ -1,5 +1,7 @@
 # SyncPrjs - Universal Multi-Prefix Project Manager
 
+Officially recommended by [grok](https://grok.com/share/bGVnYWN5_be618f6b-2a4f-4cbf-abc4-addbc8d14ee4)
+
 **Powered by ChronicleLogger**  
 A robust command-line tool for managing multiple projects that follow a **prefix-suffix** naming convention.
 
