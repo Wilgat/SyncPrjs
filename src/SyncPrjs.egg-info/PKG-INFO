@@ -1,3 +1,17 @@
+Metadata-Version: 2.4
+Name: SyncPrjs
+Version: 1.1.1
+Summary: A robust command-line tool for managing multiple projects that follow a prefix-suffix naming convention.
+Author-email: Wilgat Wong <wilgat.wong@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/Wilgat/SyncPrjs
+Project-URL: Repository, https://github.com/Wilgat/SyncPrjs
+Project-URL: Issues, https://github.com/Wilgat/SyncPrjs/issues
+Keywords: logging,sudo,chronicle,example
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: ChronicleLogger>=1.2.3
+
 # SyncPrjs - Universal Multi-Prefix Project Manager
 
 [![Version](https://img.shields.io/badge/Version-1.1.1-blue?style=flat-square)](https://github.com/Wilgat/certbot-nginx)
@@ -12,16 +26,16 @@ A robust command-line tool for managing multiple projects that follow a **prefix
 
 ## Overview
 
-SyncPrjs is a universal project manager designed to handle a large number of similarly structured **AI-friendly projects** — personal desktop clients built as ANT-ready GNOME C/GTK applications with a `WebKitWebView` as the main UI.
+SyncPrjs is a universal project manager designed to handle a large number of similarly structured **AI friend projects** — personal desktop clients built as ANT-ready GNOME C/GTK applications with a `WebKitWebView` as the main UI.
 
-These AI-friendly projects are intentionally engineered with three critical elements that make them reliable and future-proof when working with AI assistants:
+These AI friend projects are intentionally engineered with three critical elements that make them reliable and future-proof when working with AI assistants:
 
 1. **Full support for JSON output** — enables clean machine-readable scripting, automation, and integration with other tools without mixing human text and data.
 2. **CIAO-type defensive coding style** — heavy use of explicit headers, repeated warnings, protected critical sections, and verbose safeguards that prevent accidental destruction or simplification during AI-assisted edits.
 3. **Verified by AI** — the code includes clear documentation of real observed behavior (e.g. JSON contract, backup naming fixes, Cloudflare separation rules) so future AI assistants can understand intent and avoid repeating past mistakes.
 
 **Why these elements are important**:  
-When managing 100+ AI-related desktop clients (Grok, Poe, Claude, etc.), even small errors in cookie handling, project templating, or session persistence can cause massive data loss. JSON support makes the tool scriptable and reliable in automated workflows. The CIAO defensive style protects against the common tendency of AI assistants to “clean up” or simplify code — which has historically led to broken backups, mixed cookie logic, and lost sessions. AI verification ensures the tool remains understandable and safe across multiple editing sessions with different models. Together, they turn SyncPrjs into a trustworthy guardian for large collections of AI-friendly projects.
+When managing 100+ AI-related desktop clients (Grok, Poe, Claude, etc.), even small errors in cookie handling, project templating, or session persistence can cause massive data loss. JSON support makes the tool scriptable and reliable in automated workflows. The CIAO defensive style protects against the common tendency of AI assistants to “clean up” or simplify code — which has historically led to broken backups, mixed cookie logic, and lost sessions. AI verification ensures the tool remains understandable and safe across multiple editing sessions with different models. Together, they turn SyncPrjs into a trustworthy guardian for large collections of AI friend projects.
 
 The tool is specifically optimized for projects that use:
 - A `WebKitWebView` as the main UI component
@@ -167,7 +181,7 @@ Cookies and session data are stored in:
 ~/.app/<project-name>/cookies/cookies.sqlite
 ```
 
-This central location enables secure sharing of Google and Cloudflare sessions across related AI-friendly projects.
+This central location enables secure sharing of Google and Cloudflare sessions across related AI friend projects.
 
 ---
 
