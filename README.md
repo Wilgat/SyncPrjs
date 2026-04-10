@@ -12,7 +12,7 @@ A robust command-line tool for managing multiple projects that follow a **prefix
 
 ## Overview
 
-SyncPrjs is a universal project manager designed to handle a large number of similarly structured **AI-friendly projects** — personal desktop clients built as ANT-ready GNOME C/GTK applications with a `WebKitWebView` as the main UI.
+SyncPrjs is a universal project manager designed to handle a large number of similarly structured **AI-friendly projects** — personal desktop clients built as ANT-ready GNOME C/GTK applications with a `WebKitWebView` as the main UI: [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client)
 
 These AI-friendly projects are intentionally engineered with three critical elements that make them reliable and future-proof when working with AI assistants:
 
@@ -196,6 +196,7 @@ This central location enables secure sharing of Google and Cloudflare sessions a
 - Related projects: [gitlab-nginx](https://github.com/Wilgat/gitlab-nginx)
 - How to use ChronicleLogger, see: [LoggedExample](https://pypi.org/project/LoggedExample/)
 - ChronicleLogger on PyPI: [https://pypi.org/project/ChronicleLogger/](https://pypi.org/project/ChronicleLogger/)
+- [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client)
 
 ---
 
