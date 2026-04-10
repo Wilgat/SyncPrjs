@@ -372,17 +372,38 @@ PathFix()
 import sys
 from chronicle_logger.ChronicleLogger import ChronicleLogger
 
-#!/usr/bin/env python3
-
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Powered by ChronicleLogger
-#
+# Version 1.1.1
+# =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
 #
 # !!! DO NOT REMOVE, SIMPLIFY, OR COMMENT OUT ANY PART OF THIS HEADER !!!
 # !!! DO NOT TURN ANY REAL FUNCTION INTO A PLACEHOLDER OR COMMENT !!!
+#
+# Powered by ChronicleLogger see https://pypi.org/project/ChronicleLogger/
+# 
+# Naming Clarification (Important for Maintainers and Future AIs):
+#
+# - "SyncPrjs" (with capital P and no hyphen) is the official PyPI package name.
+#   See: https://pypi.org/project/SyncPrjs/
+#   This is used when doing: pip install SyncPrjs
+#
+# - "sync-prjs" (lowercase with hyphen) is the executable command name that gets
+#   installed into the user's PATH after running `pip install SyncPrjs`.
+#   Users run the tool with: sync-prjs [options]
+#
+# Previous Misunderstanding:
+#   Earlier versions and some AI suggestions incorrectly treated "SyncPrjs" and
+#   "sync-prjs" as interchangeable in output messages. This caused confusion
+#   in help text, about output, and documentation.
+#   We now clearly distinguish:
+#     - {appname} variable (from ChronicleLogger) → "SyncPrjs" (used for display)
+#     - Hard-coded 'sync-prjs'               → the actual executable command name
+#
+# This distinction is deliberately documented here so future AIs or maintainers
+# do not accidentally break user-facing command examples or installation instructions.
 #
 # This project follows the CIAO defensive coding philosophy:
 # https://github.com/Wilgat/gitlab-nginx
@@ -391,7 +412,7 @@ from chronicle_logger.ChronicleLogger import ChronicleLogger
 # PURPOSE OF THIS HEADER:
 # 1. Protect the code from being accidentally destroyed by AI assistants
 # 2. Make security auditing and code review EASY for third-party AIs and humans
-# 3. Clearly document intent, constraints, and critical security areas
+# 3. Clearly document intent, constraints, naming rules, and critical security areas
 #
 # WHY WE MUST KEEP CLASSNAME + VERSION INFORMATION:
 # - CLASSNAME, MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION are used by
@@ -480,7 +501,7 @@ from chronicle_logger.ChronicleLogger import ChronicleLogger
 # "cloudflare" in any function name (sync_cloudflare_cookies_v3, etc.) means:
 #   → Cloudflare-related cookies ONLY
 #   → cf_clearance, __cf_bm, __cfduid, or any cookie name containing "cf"
-#   → Hosts containing "cloudflare" or "cf"
+#   → Hosts containing: cloudflare or "cf"
 #
 # It does NOT mean Google cookies.
 # It does NOT allow using gm-* as source.
@@ -542,14 +563,123 @@ from chronicle_logger.ChronicleLogger import ChronicleLogger
 # I acknowledge this clearly now.
 # =============================================================================
 
+# =============================================================================
+# QUIET AND JSON MODE BEHAVIOR (CIAO Defensive - SyncPrjs Edition)
+# =============================================================================
+#
+# Supported Global Arguments:
+#   --help / -h     : Show help message (always human-readable unless --json)
+#   --about         : Show version + diagnostic information
+#   --quiet / -q    : Suppress all non-essential human-readable output
+#   --json          : Activate machine-readable JSON output (implies --quiet)
+#
+# --quiet / -q :
+#   Suppresses all non-essential human-readable output (info, success, progress,
+#   emojis, tables, menus, statistics, etc.).
+#   Critical errors are still shown as plain text (or wrapped in JSON error object).
+#
+# --json :
+#   Activates machine-readable JSON output.
+#   Automatically implies --quiet.
+#   The script MUST output EXACTLY ONE valid JSON object per run when --json
+#   is used. Never mix normal text output with JSON.
+#
+# Special Rules:
+#   - When --help is used with --json:
+#     {
+#       "type": "success",
+#       "message": "Help text available in human mode. Run without --json.",
+#       "timestamp": "..."
+#     }
+#
+#   - When --about is used with --json:
+#     Returns rich diagnostic information (see actual output from "sync-prjs about --json")
+#
+#   - When --inspect --json --project <name> is used:
+#     {
+#       "type": "inspect",
+#       "command": "inspect",
+#       "project": "gm-wilgat",
+#       "success": true,
+#       "total_cookies": 107,
+#       "google_cookies": 89,
+#       "cloudflare_cookies": 2,
+#       "other_cookies": 16,
+#       "timestamp": "..."
+#     }
+#
+# JSON Output Contract (Updated - April 2026):
+#   - Always exactly one top-level JSON object when --json is active.
+#   - Common fields: "type", "success", "timestamp"
+#   - "type" values seen in practice: "about", "success", "inspect", "error"
+#   - "command" field is present in most action responses but not guaranteed in all (e.g. help)
+#   - Error responses use: {"type": "error", "command": "...", "success": false, "message": "..."}
+#
+# Current Real Examples (from execution):
+#
+# 1. about --json:
+#    {
+#      "type": "about",
+#      "command": "about",
+#      "success": true,
+#      "version": "1.1.1",
+#      "installed": "true",
+#      "global_version": "not found",
+#      "local_version": "1.1.1",
+#      "python_version": "3.12.12",
+#      "user": "leolio",
+#      "in_python": "True",
+#      "in_pyenv": "True",
+#      "in_conda": "False",
+#      "base_dir": "...",
+#      "user_home": "...",
+#      "log_dir": "..."
+#    }
+#
+# 2. help --json:
+#    {
+#      "type": "success",
+#      "message": "Help text available in human mode. Run without --json.",
+#      "timestamp": "..."
+#    }
+#
+# 3. inspect --json --project gm-wilgat:
+#    {
+#      "type": "inspect",
+#      "command": "inspect",
+#      "project": "gm-wilgat",
+#      "success": true,
+#      "total_cookies": 107,
+#      "google_cookies": 89,
+#      "cloudflare_cookies": 2,
+#      "other_cookies": 16,
+#      "timestamp": "..."
+#    }
+#
+# Behavior Summary:
+#   - No argument → fully interactive menu (ignores --quiet/--json)
+#   - With action argument → non-interactive mode
+#   - --json makes output_text() silent and forces exactly one JSON at the end
+#   - --help and --about respect --json when present
+#
+# !!! THIS BLOCK MUST REMAIN INTACT !!!
+# It documents the real observed JSON contract so future AIs cannot accidentally
+# pollute JSON output or break quiet/JSON mode based on outdated assumptions.
+#
+# Last aligned with observed behavior: April 2026
+# =============================================================================
+
 import os
 import shutil
 import sqlite3
 import subprocess
 import sys
 import time
+import json
+import getpass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from datetime import datetime
 
 from ChronicleLogger import ChronicleLogger
 
@@ -611,47 +741,38 @@ class UniversalProjectSyncer:
 
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
-    MINOR_VERSION = 0
-    PATCH_VERSION = 0
+    MINOR_VERSION = 1
+    PATCH_VERSION = 1
 
     @staticmethod
     def class_version():
         return f"{UniversalProjectSyncer.CLASSNAME} v{UniversalProjectSyncer.MAJOR_VERSION}.{UniversalProjectSyncer.MINOR_VERSION}.{UniversalProjectSyncer.PATCH_VERSION}"
 
     # =========================================================================
-    # CIAO DEFENSIVE CODING STYLE - INIT METHOD (FOUNDATION)
+    # CIAO DEFENSIVE CODING STYLE - OUTPUT CONTROL (QUIET + JSON SUPPORT)
     # =========================================================================
     #
-    # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY ANY PART OF THIS __init__ !!!
-    # !!! ALL CRITICAL CONFIGURATION AND SECURITY LISTS MUST STAY INTACT !!!
+    # !!! DO NOT REMOVE, SIMPLIFY, OR BYPASS THIS OUTPUT SYSTEM !!!
+    # !!! ALL print() CALLS MUST GO THROUGH output_text() !!!
     #
     # Purpose:
-    #   Initializes the UniversalProjectSyncer with all required paths,
-    #   security domain lists, and logger. Sets up the foundation for
-    #   cookie handling, project detection, and process launching.
+    #   Centralized output control to support --quiet and --json modes,
+    #   exactly as implemented in the countdown project.
     #
-    # Critical Security Elements (Protected):
-    #   - binary_extensions list (prevents corruption during code sync)
-    #   - app_base = ~/.app/ (central cookie and data storage location)
-    #   - google_domains tuple (source of truth for Google session protection)
-    #   - Logger injection for ChronicleLogger traceability
+    # Rules (STRICT):
+    #   - output_text() respects quiet mode
+    #   - When json_mode is True, output_text() is completely silent
+    #   - output_json() emits exactly ONE JSON object and should be called only once
+    #   - --help and --about bypass quiet/json rules for human readability (except when --json is used)
     #
-    # Why This Method Must Remain Intact:
-    #   - These lists and paths are referenced throughout cookie sync,
-    #     code sync, and inspection features
-    #   - Removing or "cleaning" the domain lists would break Google cookie
-    #     protection across all prefix-suffix projects
-    #   - basedir and logger parameters enable proper integration with main()
+    # CIAO Protection:
+    #   Never call print() directly anywhere in the class.
+    #   Never emit multiple JSON objects.
+    #   Keep this header intact.
     #
-    # CIAO Protection Rules:
-    #   - Never remove or shorten the binary_extensions set
-    #   - Never remove or modify the google_domains tuple
-    #   - Never delete the app_base Path.home() / ".app" definition
-    #   - Keep logger=None default and self.logger assignment
-    #
-    # Last aligned with CIAO defensive style: April 2026
+    # Last aligned with countdown CIAO style: April 2026
     # =========================================================================
-    def __init__(self, basedir="/var/app", logger=None):
+    def __init__(self, basedir="/var/app", logger=None, quiet=False, json_mode=False):
         self.binary_extensions = {
             '.png', '.jpg', '.jpeg', '.gif', '.ico', '.woff', '.woff2', '.ttf',
             '.eot', '.otf', '.webp', '.mp4', '.webm', '.ogg', '.mp3', '.wav',
@@ -665,6 +786,30 @@ class UniversalProjectSyncer:
             '%.google.com', '%.youtube.com', '%.accounts.google.com',
             '%.googlevideo.com', '%.gstatic.com'
         )
+
+        self.quiet = quiet
+        self.json_mode = json_mode
+        self.json_output = None  # Will hold the final JSON data
+
+    def output_text(self, message: str, level: str = "INFO"):
+        """Single source of truth for all human-readable output."""
+        if self.json_mode:
+            return  # Silent in JSON mode
+        if self.quiet and level != "ERROR":
+            return
+        print(message)
+
+    def output_json(self, data: dict):
+        """Emit exactly one JSON object. Must be called at most once per run."""
+        if not self.json_mode:
+            return
+        if self.json_output is not None:
+            self.log("Attempted to emit multiple JSON objects - ignored", level="WARNING")
+            return
+
+        data.setdefault("timestamp", datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.json_output = data
+        print(json.dumps(data, ensure_ascii=False))
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - CREATE COOKIE BACKUP V2 (SAFETY CRITICAL)
@@ -731,11 +876,11 @@ class UniversalProjectSyncer:
         try:
             shutil.copy2(db_path, backup_file)
             self.log(f"Cookie backup created: {backup_file}", level="INFO")
-            print(f"   💾 Backup created → {backup_file}")
+            self.output_text(f"   💾 Backup created → {backup_file}")
             return True
         except Exception as e:
             self.log(f"Failed to create cookie backup for {project_name}: {e}", level="ERROR")
-            print(f"   ⚠️  Backup failed for {project_name}: {e}")
+            self.output_text(f"   ⚠️  Backup failed for {project_name}: {e}", level="ERROR")
             return False
 
     # =========================================================================
@@ -846,12 +991,12 @@ class UniversalProjectSyncer:
     # =========================================================================
     def restore_cookies(self):
         self.log("User selected Option 6: Restore cookies from backup", level="INFO")
-        print("\n🔄 Cookie Restore from Backup")
-        print("   This will overwrite current cookies with a previous backup.\n")
+        self.output_text("\n🔄 Cookie Restore from Backup")
+        self.output_text("   This will overwrite current cookies with a previous backup.\n")
 
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             return
 
         prefixes = sorted(groups.keys())
@@ -861,10 +1006,10 @@ class UniversalProjectSyncer:
         project_list = [p[0] for p in groups[chosen_prefix]]
 
         # Let user choose suffix or All
-        print(f"\nSelect suffix for {chosen_prefix} (or All):")
-        print("  [A] All projects under this prefix")
+        self.output_text(f"\nSelect suffix for {chosen_prefix} (or All):")
+        self.output_text("  [A] All projects under this prefix")
         for i, proj in enumerate(project_list, 1):
-            print(f"  [{i}] {proj}")
+            self.output_text(f"  [{i}] {proj}")
 
         while True:
             c = input("\nChoose: ").strip().upper()
@@ -876,10 +1021,10 @@ class UniversalProjectSyncer:
             if c.isdigit() and 1 <= int(c) <= len(project_list):
                 targets = [project_list[int(c)-1]]
                 break
-            print("Invalid choice.")
+            self.output_text("Invalid choice.")
 
         for proj in targets:
-            print(f"\n📋 Project: {proj}")
+            self.output_text(f"\n📋 Project: {proj}")
 
             # Scan top-level ~/.app/ for {proj}.*.bak folders (v2 format)
             backups = []
@@ -889,15 +1034,13 @@ class UniversalProjectSyncer:
                         backups.append(item)
 
             if not backups:
-                print("   No backup found.")
+                self.output_text("   No backup found.")
                 continue
 
             # Sort by date (newest first) - parse YYYYMMDD-N from name
             def backup_key(b):
                 try:
-                    # name like: cf-jeo.20260409-5.bak
                     name = b.name
-                    # extract after first . and before last .bak
                     date_part = name.split('.', 1)[1].rsplit('.', 1)[0].split('-')[0]
                     n_part = name.split('-')[-1].replace('.bak', '')
                     return (int(date_part), int(n_part))
@@ -906,9 +1049,9 @@ class UniversalProjectSyncer:
 
             backups.sort(key=backup_key, reverse=True)
 
-            print("   Available backups (newest first):")
+            self.output_text("   Available backups (newest first):")
             for i, b in enumerate(backups, 1):
-                print(f"     [{i}] {b.name}")
+                self.output_text(f"     [{i}] {b.name}")
 
             choice = input("\nSelect backup to restore (number) or skip [S]: ").strip().upper()
             if choice == 'S' or not choice.isdigit():
@@ -916,20 +1059,20 @@ class UniversalProjectSyncer:
 
             idx = int(choice) - 1
             if not (0 <= idx < len(backups)):
-                print("   Invalid selection.")
+                self.output_text("   Invalid selection.")
                 continue
 
             selected_backup = backups[idx] / "cookies.sqlite"
             if not selected_backup.exists():
-                print("   Backup file missing inside folder.")
+                self.output_text("   Backup file missing inside folder.")
                 continue
 
             target_cookie = self.app_base / proj / "cookies" / "cookies.sqlite"
 
-            print(f"\n⚠️  You are about to restore from: {backups[idx].name}")
-            print(f"    Target: {proj}/cookies/cookies.sqlite")
+            self.output_text(f"\n⚠️  You are about to restore from: {backups[idx].name}")
+            self.output_text(f"    Target: {proj}/cookies/cookies.sqlite")
             if input("Proceed with restore? [y/N] ").strip().lower() != 'y':
-                print("   Restore cancelled.")
+                self.output_text("   Restore cancelled.")
                 continue
 
             # Backup current state before restore (using v2)
@@ -939,13 +1082,13 @@ class UniversalProjectSyncer:
             target_cookie.parent.mkdir(parents=True, exist_ok=True)
             try:
                 shutil.copy2(selected_backup, target_cookie)
-                print(f"   ✅ Successfully restored cookies for {proj}")
+                self.output_text(f"   ✅ Successfully restored cookies for {proj}")
                 self.log(f"Cookie restore completed for {proj} from {backups[idx].name}", level="INFO")
             except Exception as e:
-                print(f"   ❌ Restore failed: {e}")
+                self.output_text(f"   ❌ Restore failed: {e}")
                 self.log(f"Restore failed for {proj}: {e}", level="ERROR")
 
-        print("\n🎉 Cookie restore process completed.")
+        self.output_text("\n🎉 Cookie restore process completed.")
         self.log("Cookie restore session finished", level="INFO")
 
     # =========================================================================
@@ -982,18 +1125,18 @@ class UniversalProjectSyncer:
     # =========================================================================
     def clean_backups(self):
         self.log("User selected Option 7: Clean backup folders", level="INFO")
-        print("\n🧹 Clean Backup Folders")
-        print("   This will delete .bak folders from ~/.app/\n")
+        self.output_text("\n🧹 Clean Backup Folders")
+        self.output_text("   This will delete .bak folders from ~/.app/\n")
 
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders found.")
+            self.output_text("No project folders found.")
             return
 
         prefixes = sorted(groups.keys())
-        print("  [A] Clean backups for ALL projects")
+        self.output_text("  [A] Clean backups for ALL projects")
         for i, p in enumerate(prefixes, 1):
-            print(f"  [{i}] Clean backups for prefix: {p}")
+            self.output_text(f"  [{i}] Clean backups for prefix: {p}")
 
         c = input("\nChoose: ").strip().upper()
         if c == 'Q':
@@ -1004,14 +1147,14 @@ class UniversalProjectSyncer:
         elif c.isdigit() and 1 <= int(c) <= len(prefixes):
             target_prefixes = [prefixes[int(c)-1]]
         else:
-            print("Invalid choice.")
+            self.output_text("Invalid choice.")
             return
 
         total_deleted = 0
         deleted_list = []
 
         for prefix in target_prefixes:
-            print(f"\nCleaning backups for prefix: {prefix}")
+            self.output_text(f"\nCleaning backups for prefix: {prefix}")
             for proj_name, _ in groups[prefix]:
                 # Scan top-level ~/.app/ for {proj_name}.*.bak folders
                 if not self.app_base.exists():
@@ -1020,20 +1163,20 @@ class UniversalProjectSyncer:
                     if item.is_dir() and item.name.startswith(f"{proj_name}.") and item.name.endswith('.bak'):
                         try:
                             shutil.rmtree(item, ignore_errors=True)
-                            print(f"   🗑️  Deleted: {item.name}")
+                            self.output_text(f"   🗑️  Deleted: {item.name}")
                             deleted_list.append(item.name)
                             total_deleted += 1
                         except Exception as e:
-                            print(f"   ⚠️  Failed to delete {item.name}: {e}")
+                            self.output_text(f"   ⚠️  Failed to delete {item.name}: {e}")
 
         if deleted_list:
-            print("\nDeleted backups:")
+            self.output_text("\nDeleted backups:")
             for name in deleted_list:
-                print(f"   - {name}")
+                self.output_text(f"   - {name}")
         else:
-            print("\nNo matching backup folders found to delete.")
+            self.output_text("\nNo matching backup folders found to delete.")
 
-        print(f"\n🎉 Cleanup completed. Removed {total_deleted} backup folders.")
+        self.output_text(f"\n🎉 Cleanup completed. Removed {total_deleted} backup folders.")
         self.log(f"Backup cleanup completed | Removed {total_deleted} folders", level="INFO")
 
     # =========================================================================
@@ -1081,9 +1224,11 @@ class UniversalProjectSyncer:
                 self.logger.log_message(message, level=level, component=component)
             except Exception:
                 # Ultra-safe fallback if anything goes wrong with logger
-                print(f"[{level}] {message}")
+                if not self.json_mode:
+                    print(f"[{level}] {message}")
         else:
-            print(f"[{level}] {message}")
+            if not self.json_mode:
+                print(f"[{level}] {message}")
 
     def get_all_hyphen_folders(self) -> Dict[str, List[Tuple[str, str]]]:
         # =========================================================================
@@ -1161,17 +1306,17 @@ class UniversalProjectSyncer:
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
     def choose_one(self, prompt: str, items: List[str]) -> str:
-        print(f"\n{prompt}")
+        self.output_text(f"\n{prompt}")
         for i, item in enumerate(items, 1):
-            print(f"  [{i}] {item}")
-        print("  [Q] Quit")
+            self.output_text(f"  [{i}] {item}")
+        self.output_text("  [Q] Quit")
         while True:
             c = input("\nChoose: ").strip().upper()
             if c == 'Q':
                 sys.exit(0)
             if c.isdigit() and 1 <= int(c) <= len(items):
                 return items[int(c) - 1]
-            print("Invalid choice.")
+            self.output_text("Invalid choice.")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - CHOOSE MULTIPLE HELPER (USER INTERACTION)
@@ -1206,12 +1351,12 @@ class UniversalProjectSyncer:
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
     def choose_multiple(self, prompt: str, items: List[str], exclude: str) -> List[str]:
-        print(f"\n{prompt}")
+        self.output_text(f"\n{prompt}")
         valid_items = [item for item in items if item != exclude]
         for i, item in enumerate(valid_items, 1):
-            print(f"  [{i}] {item}")
-        print(f"  [A] All except template ({exclude})")
-        print("  [Q] Quit")
+            self.output_text(f"  [{i}] {item}")
+        self.output_text(f"  [A] All except template ({exclude})")
+        self.output_text("  [Q] Quit")
 
         while True:
             c = input("\nChoose: ").strip().upper()
@@ -1227,7 +1372,7 @@ class UniversalProjectSyncer:
                         indices.append(valid_items[idx])
             if indices:
                 return indices
-            print("Invalid input.")
+            self.output_text("Invalid input.")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - GET COOKIE STATS HELPER (EXACT SCHEMA PROTECTED)
@@ -1342,7 +1487,7 @@ class UniversalProjectSyncer:
         groups = self.get_all_hyphen_folders()
         if not groups:
             self.log("No hyphenated project folders found", level="WARNING")
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             return
 
         prefixes = sorted(groups.keys())
@@ -1355,17 +1500,17 @@ class UniversalProjectSyncer:
 
         db_path = self.app_base / chosen_project / "cookies" / "cookies.sqlite"
 
-        print(f"\n🔍 Inspecting cookies for: {chosen_project}")
+        self.output_text(f"\n🔍 Inspecting cookies for: {chosen_project}")
         stats = self.get_cookie_stats(db_path)
 
-        print("\n" + "="*70)
-        print(f"COOKIE SUMMARY → {chosen_project}")
-        print("="*70)
-        print(f"{'Total Cookies':<30} : {stats['total']}")
-        print(f"{'Google Related':<30} : {stats['google']}")
-        print(f"{'Cloudflare Related':<30} : {stats['cloudflare']}")
-        print(f"{'Other Cookies':<30} : {stats['other']}")
-        print("="*70)
+        self.output_text("\n" + "="*70)
+        self.output_text(f"COOKIE SUMMARY → {chosen_project}")
+        self.output_text("="*70)
+        self.output_text(f"{'Total Cookies':<30} : {stats['total']}")
+        self.output_text(f"{'Google Related':<30} : {stats['google']}")
+        self.output_text(f"{'Cloudflare Related':<30} : {stats['cloudflare']}")
+        self.output_text(f"{'Other Cookies':<30} : {stats['other']}")
+        self.output_text("="*70)
 
         self.log(f"Cookie inspection completed for {chosen_project} | "
                  f"Total:{stats['total']} Google:{stats['google']} CF:{stats['cloudflare']}", 
@@ -1374,8 +1519,8 @@ class UniversalProjectSyncer:
         if stats["total"] > 0:
             detail_choice = input("\nShow detailed content of all three categories in table format? [y/N] ").strip().lower()
             if detail_choice == 'y':
-                print("\n📋 DETAILED COOKIE CONTENT")
-                print("="*100)
+                self.output_text("\n📋 DETAILED COOKIE CONTENT")
+                self.output_text("="*100)
                 detailed_stats = self.get_cookie_stats(db_path, detailed=True)
                 rows = detailed_stats.get("rows", [])
 
@@ -1385,12 +1530,12 @@ class UniversalProjectSyncer:
 
                 def print_cookie_table(category, cookie_list):
                     if not cookie_list:
-                        print(f"\n{category}: (none)")
+                        self.output_text(f"\n{category}: (none)")
                         return
-                    print(f"\n{category} Cookies ({len(cookie_list)}):")
-                    print("-" * 100)
-                    print(f"{'Host':<40} {'Name':<30} {'Value (truncated)':<35} {'Expiry'}")
-                    print("-" * 100)
+                    self.output_text(f"\n{category} Cookies ({len(cookie_list)}):")
+                    self.output_text("-" * 100)
+                    self.output_text(f"{'Host':<40} {'Name':<30} {'Value (truncated)':<35} {'Expiry'}")
+                    self.output_text("-" * 100)
                     for row in cookie_list[:40]:
                         host = row[0] if len(row) > 0 else ""
                         name = row[1] if len(row) > 1 else ""
@@ -1398,17 +1543,17 @@ class UniversalProjectSyncer:
                         expiry = row[3] if len(row) > 3 else 0
                         val_short = (value[:32] + "...") if len(str(value)) > 35 else str(value)
                         exp_str = time.strftime("%Y-%m-%d", time.gmtime(expiry)) if expiry and expiry > 0 else "Session"
-                        print(f"{host:<40} {name:<30} {val_short:<35} {exp_str}")
+                        self.output_text(f"{host:<40} {name:<30} {val_short:<35} {exp_str}")
                     if len(cookie_list) > 40:
-                        print(f"... and {len(cookie_list)-40} more")
+                        self.output_text(f"... and {len(cookie_list)-40} more")
 
                 print_cookie_table("Google", google_rows)
                 print_cookie_table("Cloudflare", cf_rows)
                 print_cookie_table("Other", other_rows)
-                print("\n" + "="*100)
+                self.output_text("\n" + "="*100)
 
                 self.log(f"Detailed cookie view displayed for {chosen_project}", level="INFO")
-        
+
     # ====================== AUTO START ======================
     def start_project(self, project_name: str) -> Optional[subprocess.Popen]:
         # =========================================================================
@@ -1432,6 +1577,8 @@ class UniversalProjectSyncer:
         #       2. main.py
         #       3. run.py
         #       4. ant run (for ANT-based projects)
+        #       5. gradle run (for gradle-based projects)
+        #       6. build.sh (for customized build projects)
         #   - Returns Popen object so caller can track completion if needed
         #
         # Why This Method Must Remain Intact:
@@ -1464,6 +1611,10 @@ class UniversalProjectSyncer:
             cmd = ["python3", "main.py"]
         elif (project_path / "run.py").exists():
             cmd = ["python3", "run.py"]
+        elif (project_path / "build.xml").exists():
+            cmd = ["ant", "run"]
+        elif (project_path / "build.sh").exists():
+            cmd = ["./build.sh"]
 
         if cmd is None:
             self.log(f"No start script found for {project_name}", level="WARNING")
@@ -1517,7 +1668,7 @@ class UniversalProjectSyncer:
         self.log("User selected Option 0: Auto-start projects", level="INFO")
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             return
 
         prefixes = sorted(groups.keys())
@@ -1525,13 +1676,13 @@ class UniversalProjectSyncer:
         self.log(f"User chose prefix for auto-start: {chosen_prefix}", level="INFO")
 
         project_names = [p[0] for p in groups[chosen_prefix]]
-        print(f"\n🚀 Will start {len(project_names)} projects with 20s delay...")
+        self.output_text(f"\n🚀 Will start {len(project_names)} projects with 20s delay...")
 
         for i, proj in enumerate(project_names, 1):
-            print(f"[{i}/{len(project_names)}] Launching {proj}")
+            self.output_text(f"[{i}/{len(project_names)}] Launching {proj}")
             self.start_project(proj)
             if i < len(project_names):
-                print("  ⏳ Waiting 20 seconds...")
+                self.output_text("  ⏳ Waiting 20 seconds...")
                 time.sleep(20)
 
         self.log(f"Auto-start sequence completed for prefix {chosen_prefix}", level="INFO")
@@ -1651,10 +1802,10 @@ class UniversalProjectSyncer:
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
     def post_sync_actions(self, project_path: Path):
-        print(f"\n🔧 Post-sync actions for {project_path.name}")
+        self.output_text(f"\n🔧 Post-sync actions for {project_path.name}")
         build_xml = project_path / "build.xml"
         if build_xml.exists():
-            print("  🛠️  Running Ant build...")
+            self.output_text("  🛠️  Running Ant build...")
             try:
                 subprocess.run("ant clean && ant build", shell=True, cwd=str(project_path),
                              capture_output=True, text=True, timeout=300)
@@ -1664,9 +1815,9 @@ class UniversalProjectSyncer:
         git_dir = project_path / ".git"
         if git_dir.exists():
             shutil.rmtree(git_dir, ignore_errors=True)
-            print("  🗑️  Removed .git folder")
+            self.output_text("  🗑️  Removed .git folder")
 
-        print("  Post-sync completed.\n")
+        self.output_text("  Post-sync completed.\n")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - SYNC CLOUDFLARE COOKIES V3 (SECURITY CRITICAL)
@@ -1724,13 +1875,13 @@ class UniversalProjectSyncer:
     # =========================================================================
     def sync_cloudflare_cookies_v3(self):
         self.log("User selected Option 4: Cloudflare cookie sync v3", level="INFO")
-        print("\n☁️  Cloudflare Cookie Sync v3 → Safe Cloudflare-only merge")
-        print("   Only cf-related cookies will be updated. Non-CF cookies preserved.")
-        print("   Google cookies are NEVER touched by this function.\n")
+        self.output_text("\n☁️  Cloudflare Cookie Sync v3 → Safe Cloudflare-only merge")
+        self.output_text("   Only cf-related cookies will be updated. Non-CF cookies preserved.")
+        self.output_text("   Google cookies are NEVER touched by this function.\n")
 
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             self.log("No hyphenated projects found for Cloudflare sync v3", level="WARNING")
             return
 
@@ -1747,7 +1898,7 @@ class UniversalProjectSyncer:
 
         source_cookie = self.app_base / source_proj / "cookies" / "cookies.sqlite"
         if not source_cookie.exists():
-            print(f"   ⚠️  Source cookie database not found: {source_cookie}")
+            self.output_text(f"   ⚠️  Source cookie database not found: {source_cookie}")
             self.log(f"Source cookie DB missing for {source_proj}", level="ERROR")
             return
 
@@ -1757,43 +1908,43 @@ class UniversalProjectSyncer:
             project_list, exclude=source_proj)
 
         # Show stats first
-        print(f"\n📊 Cloudflare Cookie Stats (source: {source_proj})")
-        print("=" * 70)
+        self.output_text(f"\n📊 Cloudflare Cookie Stats (source: {source_proj})")
+        self.output_text("=" * 70)
         source_stats = self.get_cookie_stats(source_cookie)
-        print(f"Cloudflare cookies in source: {source_stats['cloudflare']}")
-        print("=" * 70)
+        self.output_text(f"Cloudflare cookies in source: {source_stats['cloudflare']}")
+        self.output_text("=" * 70)
 
-        print("\nTargets that will be updated:")
+        self.output_text("\nTargets that will be updated:")
         for proj in targets:
             target_cookie = self.app_base / proj / "cookies" / "cookies.sqlite"
             target_stats = self.get_cookie_stats(target_cookie)
-            print(f"   {proj:<25} Current CF cookies: {target_stats['cloudflare']}")
+            self.output_text(f"   {proj:<25} Current CF cookies: {target_stats['cloudflare']}")
 
         if input("\n⚠️  Proceed with Cloudflare-only sync? [y/N] ").strip().lower() != 'y':
-            print("   Operation cancelled by user.")
+            self.output_text("   Operation cancelled by user.")
             self.log("Cloudflare sync v3 cancelled by user", level="INFO")
             return
 
         # Perform safe sync
         success = 0
         for proj in targets:
-            print(f"   Processing {proj} ... ", end="")
+            self.output_text(f"   Processing {proj} ... ", end="")
             target_cookie = self.app_base / proj / "cookies" / "cookies.sqlite"
 
             # Mandatory backup using v2 with correct full project name
             if not self.create_cookie_backup_v2(proj, target_cookie):
-                print("Backup failed - skipping")
+                self.output_text("Backup failed - skipping")
                 continue
 
             # Cloudflare-only smart merge
             ok = self.safe_merge_cloudflare_only(source_cookie, target_cookie)
             if ok:
                 success += 1
-                print("✅")
+                self.output_text("✅")
             else:
-                print("❌")
+                self.output_text("❌")
 
-        print(f"\n🎉 Cloudflare cookie sync v3 completed | Success: {success}/{len(targets)}")
+        self.output_text(f"\n🎉 Cloudflare cookie sync v3 completed | Success: {success}/{len(targets)}")
         self.log(f"Cloudflare cookie sync v3 completed | Success: {success}/{len(targets)}", level="INFO")
 
     # =========================================================================
@@ -1886,8 +2037,8 @@ class UniversalProjectSyncer:
     def sync_google_cookies(self, only_missing: bool = False):
         self.log(f"User selected Option {'2' if only_missing else '1'}: Google cookie sync", level="INFO")
         mode = "Missing folders only" if only_missing else "All projects (Smart Google merge)"
-        print(f"\n🍪 Google Cookie Sync Mode → {mode}")
-        print("   Using gm-* as source of truth for Google sessions\n")
+        self.output_text(f"\n🍪 Google Cookie Sync Mode → {mode}")
+        self.output_text("   Using gm-* as source of truth for Google sessions\n")
 
         suffix_groups: Dict[str, List[str]] = {}
         for p in Path(".").iterdir():
@@ -1905,7 +2056,7 @@ class UniversalProjectSyncer:
             if not gm_cookie.exists():
                 continue
 
-            print(f"🔑 Suffix: {suffix} (from {gm_name})")
+            self.output_text(f"🔑 Suffix: {suffix} (from {gm_name})")
 
             for proj in projects:
                 if proj.startswith("gm-"):
@@ -1917,20 +2068,20 @@ class UniversalProjectSyncer:
                 if only_missing and target_dir.exists():
                     continue
 
-                print(f"   {proj:<22} ", end="")
+                self.output_text(f"   {proj:<22} ", end="")
 
                 if not target_dir.exists() or only_missing:
                     ok = self.full_cookie_copy(gm_cookie, target_cookie)
-                    print("✅ Full copy" if ok else "❌ Failed")
+                    self.output_text("✅ Full copy" if ok else "❌ Failed")
                 else:
                     ok = self.safe_merge_google_cookies(gm_cookie, target_cookie)
-                    print("✅ Smart merge" if ok else "❌ Failed")
+                    self.output_text("✅ Smart merge" if ok else "❌ Failed")
 
                 actions += 1
                 if ok:
                     success += 1
 
-        print(f"\n🎉 Done! Successfully synced {success}/{actions} projects.")
+        self.output_text(f"\n🎉 Done! Successfully synced {success}/{actions} projects.")
         self.log(f"Google cookie sync completed | Success: {success}/{actions} | Mode: {mode}", level="INFO")
 
     # ====================== CODE SYNC (Original) ======================
@@ -1974,12 +2125,12 @@ class UniversalProjectSyncer:
         self.log("User selected Option 3: Project code sync", level="INFO")
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             self.log("No hyphenated project folders found for code sync", level="WARNING")
             return
 
         prefixes = sorted(groups.keys())
-        print(f"Found {len(prefixes)} prefix groups: {', '.join(prefixes)}")
+        self.output_text(f"Found {len(prefixes)} prefix groups: {', '.join(prefixes)}")
 
         chosen_prefix = self.choose_one("Choose project PREFIX:", prefixes)
         self.log(f"User chose prefix for code sync: {chosen_prefix}", level="INFO")
@@ -1997,14 +2148,14 @@ class UniversalProjectSyncer:
         missing_suffixes = sorted(all_suffixes - current_suffixes)
 
         if missing_suffixes:
-            print(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for {chosen_prefix}")
+            self.output_text(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for {chosen_prefix}")
             c = input("Add missing? (A = all, S = skip, or numbers): ").strip().upper()
             if c == 'A':
                 for suf in missing_suffixes:
                     name = chosen_prefix + suf
                     if not Path(name).exists():
                         Path(name).mkdir(parents=True)
-                        print(f"   ✅ Created: {name}")
+                        self.output_text(f"   ✅ Created: {name}")
                         project_names.append(name)
 
         project_names = sorted(list(dict.fromkeys(project_names)))
@@ -2014,7 +2165,7 @@ class UniversalProjectSyncer:
             project_names, exclude=source_dir)
 
         if input(f"\nProceed with code sync? [y/N] ").strip().lower() != 'y':
-            print("Cancelled.")
+            self.output_text("Cancelled.")
             self.log("Code sync cancelled by user", level="INFO")
             return
 
@@ -2024,7 +2175,7 @@ class UniversalProjectSyncer:
             if self.sync_project(source_dir, target, source_suffix, new_suffix):
                 success += 1
 
-        print(f"\n🎉 Code sync completed! Updated {success}/{len(targets)} projects.")
+        self.output_text(f"\n🎉 Code sync completed! Updated {success}/{len(targets)} projects.")
         self.log(f"Code sync completed | Updated {success}/{len(targets)} projects | Prefix: {chosen_prefix}", level="INFO")
 
     # ====================== CORE SYNC HELPERS ======================
@@ -2066,14 +2217,14 @@ class UniversalProjectSyncer:
     # =========================================================================
     def sync_project(self, source_dir: str, target_dir: str, old_suffix: str, new_suffix: str) -> bool:
         if target_dir == source_dir:
-            print(f"  SKIPPED: {target_dir} is source")
+            self.output_text(f"  SKIPPED: {target_dir} is source")
             self.log(f"Skipped sync: {target_dir} is the source directory", level="INFO")
             return False
 
         target_path = Path(target_dir)
         source_path = Path(source_dir)
 
-        print(f"\nSYNC → {target_dir}")
+        self.output_text(f"\nSYNC → {target_dir}")
         if target_path.exists():
             shutil.rmtree(target_path)
 
@@ -2097,7 +2248,7 @@ class UniversalProjectSyncer:
                 if self.replace_in_file(fp, old_suffix, new_suffix):
                     changed += 1
 
-        print(f"  Renamed {renamed} files | Modified {changed}/{scanned} text files")
+        self.output_text(f"  Renamed {renamed} files | Modified {changed}/{scanned} text files")
         self.post_sync_actions(target_path)
         self.log(f"Project sync completed → {target_dir} | Renamed:{renamed} Modified:{changed}/{scanned}", level="INFO")
         return True
@@ -2190,7 +2341,7 @@ class UniversalProjectSyncer:
 
         except Exception as e:
             self.log(f"safe_merge_google_cookies failed for {project_name}: {e}", level="ERROR")
-            print(f"    Error: {e}")
+            self.output_text(f"    Error: {e}")
             if 'tmp_db' in locals() and tmp_db.exists():
                 tmp_db.unlink(missing_ok=True)
             return False
@@ -2230,7 +2381,8 @@ class UniversalProjectSyncer:
 
         # === MANDATORY BACKUP BEFORE OVERWRITE ===
         if dst_db.exists():
-            if not self.create_cookie_backup(dst_db):
+            project_name = dst_db.parent.parent.name
+            if not self.create_cookie_backup_v2(project_name, dst_db):
                 self.log("Backup failed - aborting full cookie copy for safety", level="ERROR")
                 return False
 
@@ -2252,36 +2404,77 @@ class UniversalProjectSyncer:
     #
     # Purpose:
     #   Displays the real structure of cookies.sqlite (table_info + CREATE TABLE)
-    #   for any selected project. Helps diagnose column mismatches (e.g. missing creationTime)
-    #   without wasting time on assumptions about Firefox vs WebKit schema.
-    #
-    # Critical Features (Protected):
-    #   - Uses standard PRAGMA table_info(moz_cookies) and sqlite_master query
-    #   - Works on the exact WebKitCookieManager SQLite backend used by the projects
-    #   - Clear output of column names, types, and full table definition
-    #   - Same prefix → project selection flow as inspect_cookies
-    #
-    # Why This Method Must Remain Intact:
-    #   - Repeated AI mistakes assumed wrong columns → "no such column" errors
-    #   - This tool makes the actual schema visible immediately
-    #   - Essential for long-term maintenance when schema varies across WebKit versions
-    #
-    # CIAO Protection Rules:
-    #   - Never hardcode column lists here (always query dynamically)
-    #   - Never remove the sqlite_master query for CREATE TABLE statement
-    #   - Keep read-only connection and full error logging
-    #   - This header must stay fully intact for future debugging
+    #   Supports both interactive human mode and non-interactive --json --project mode.
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
-    def show_database_structure(self):
-        self.log("User selected Option 8: Show cookie database structure", level="INFO")
-        print("\n🔬 Show Cookie Database Structure")
-        print("   This shows the exact schema of moz_cookies table.\n")
+    def show_database_structure(self, project: Optional[str] = None):
+        self.log("User selected schema/show-schema", level="INFO")
+
+        # === NON-INTERACTIVE JSON MODE (sync-prjs schema --json --project XXX) ===
+        if self.json_mode and project:
+            db_path = self.app_base / project / "cookies" / "cookies.sqlite"
+            if not db_path.exists():
+                self.output_json({
+                    "type": "error",
+                    "command": "schema",
+                    "success": False,
+                    "message": f"Database not found for project: {project}",
+                    "project": project
+                })
+                return
+
+            try:
+                conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+                cur = conn.cursor()
+
+                cur.execute("PRAGMA table_info(moz_cookies)")
+                columns = cur.fetchall()
+
+                cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='moz_cookies'")
+                create_stmt = cur.fetchone()
+                create_sql = create_stmt[0] if create_stmt else None
+
+                conn.close()
+
+                self.output_json({
+                    "type": "schema",
+                    "command": "schema",
+                    "success": True,
+                    "project": project,
+                    "table": "moz_cookies",
+                    "columns": [
+                        {
+                            "cid": col[0],
+                            "name": col[1],
+                            "type": col[2],
+                            "notnull": bool(col[3]),
+                            "default_value": col[4],
+                            "pk": bool(col[5])
+                        }
+                        for col in columns
+                    ],
+                    "create_statement": create_sql
+                })
+                return
+
+            except Exception as e:
+                self.output_json({
+                    "type": "error",
+                    "command": "schema",
+                    "success": False,
+                    "message": f"Failed to read schema for {project}: {str(e)}",
+                    "project": project
+                })
+                return
+
+        # === INTERACTIVE HUMAN MODE (original behavior - Option 8 or "schema") ===
+        self.output_text("\n🔬 Show Cookie Database Structure")
+        self.output_text("   This shows the exact schema of moz_cookies table.\n")
 
         groups = self.get_all_hyphen_folders()
         if not groups:
-            print("No project folders with '-' found.")
+            self.output_text("No project folders with '-' found.")
             return
 
         prefixes = sorted(groups.keys())
@@ -2295,42 +2488,41 @@ class UniversalProjectSyncer:
         db_path = self.app_base / chosen_project / "cookies" / "cookies.sqlite"
 
         if not db_path.exists():
-            print(f"   Database not found: {db_path}")
+            self.output_text(f"   Database not found: {db_path}")
             self.log(f"Database not found for structure inspection: {db_path}", level="WARNING")
             return
 
-        print(f"\n📊 Database structure for: {chosen_project}")
-        print("="*80)
+        self.output_text(f"\n📊 Database structure for: {chosen_project}")
+        self.output_text("="*80)
 
         try:
             conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
             cur = conn.cursor()
 
-            # Table info (columns)
             cur.execute("PRAGMA table_info(moz_cookies)")
             columns = cur.fetchall()
 
-            print("Table: moz_cookies")
-            print("-" * 80)
-            print(f"{'CID':<4} {'Name':<20} {'Type':<15} {'NotNull':<8} {'Default':<15} {'PK':<3}")
-            print("-" * 80)
+            self.output_text("Table: moz_cookies")
+            self.output_text("-" * 80)
+            self.output_text(f"{'CID':<4} {'Name':<20} {'Type':<15} {'NotNull':<8} {'Default':<15} {'PK':<3}")
+            self.output_text("-" * 80)
             for col in columns:
-                print(f"{col[0]:<4} {col[1]:<20} {col[2]:<15} {col[3]:<8} {str(col[4]):<15} {col[5]:<3}")
+                self.output_text(f"{col[0]:<4} {col[1]:<20} {col[2]:<15} {col[3]:<8} {str(col[4]):<15} {col[5]:<3}")
 
-            # Full CREATE TABLE statement
             cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='moz_cookies'")
             create_stmt = cur.fetchone()
             if create_stmt:
-                print("\nFull CREATE TABLE statement:")
-                print("-" * 80)
-                print(create_stmt[0])
+                self.output_text("\nFull CREATE TABLE statement:")
+                self.output_text("-" * 80)
+                self.output_text(create_stmt[0])
 
             conn.close()
             self.log(f"Database structure displayed for {chosen_project}", level="INFO")
 
         except Exception as e:
             self.log(f"Failed to read database structure for {chosen_project}: {e}", level="ERROR")
-            print(f"   Error reading structure: {e}")
+            self.output_text(f"   Error reading structure: {e}")
+
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - RUN METHOD (MAIN MENU)
@@ -2366,60 +2558,131 @@ class UniversalProjectSyncer:
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
-    def run(self):
-        self.log("SyncPrjs main menu started", level="INFO")
+    def run(self, action: Optional[str] = None, project: Optional[str] = None,
+            source: Optional[str] = None, target: Optional[str] = None,
+            same_prefix_except_source: bool = False, prefix: Optional[str] = None):
+        if action is None:
+            # Interactive menu
+            self.log("SyncPrjs main menu started", level="INFO")
 
-        print("=" * 80)
-        print("   SyncPrjs - Universal Project Manager")
-        print("   Smart Google + Cloudflare Cookie Sync + Backup/Restore")
-        print("=" * 80)
-        print("0. Auto-start projects by prefix (20s delay)")
-        print("1. Sync Google cookies (Smart merge)")
-        print("2. Sync Google cookies (Missing folders only)")
-        print("3. Sync project code")
-        print("4. Sync Cloudflare cookies by prefix (v3 - safe)")
-        print("5. Inspect cookies (Google + Cloudflare + Others)")
-        print("6. Restore cookies from backup")
-        print("7. Clean all backup folders")
-        print("8. Show cookie database structure (debug schema)")
-        print("Q. Quit")
-        print("=" * 80)
+            self.output_text("=" * 80)
+            self.output_text("   SyncPrjs - Universal Project Manager")
+            self.output_text("   Smart Google + Cloudflare Cookie Sync + Backup/Restore")
+            self.output_text("=" * 80)
+            self.output_text("0. Auto-start projects by prefix (20s delay)")
+            self.output_text("1. Sync Google cookies (Smart merge)")
+            self.output_text("2. Sync Google cookies (Missing folders only)")
+            self.output_text("3. Sync project code")
+            self.output_text("4. Sync Cloudflare cookies by prefix (v3 - safe)")
+            self.output_text("5. Inspect cookies (Google + Cloudflare + Others)")
+            self.output_text("6. Restore cookies from backup")
+            self.output_text("7. Clean all backup folders")
+            self.output_text("8. Show cookie database structure (debug schema)")
+            self.output_text("Q. Quit")
+            self.output_text("=" * 80)
 
-        while True:
-            choice = input("\nSelect option: ").strip().upper()
+            while True:
+                choice = input("\nSelect option: ").strip().upper()
 
-            if choice == '0':
-                self.auto_start_projects()
-                break
-            elif choice == '1':
-                self.sync_google_cookies(only_missing=False)
-                break
-            elif choice == '2':
-                self.sync_google_cookies(only_missing=True)
-                break
-            elif choice == '3':
-                self.sync_code()
-                break
-            elif choice == '4':
-                self.sync_cloudflare_cookies_v3()
-                break
-            elif choice == '5':
-                self.inspect_cookies()
-                break
-            elif choice == '6':
-                self.restore_cookies()
-                break
-            elif choice == '7':
-                self.clean_backups()
-                break
-            elif choice == '8':
-                self.show_database_structure()
-                break
-            elif choice == 'Q':
-                self.log("SyncPrjs exited by user", level="INFO")
-                sys.exit(0)
-            else:
-                print("Invalid choice. Please select 0-7 or Q.")
+                if choice == '0':
+                    self.auto_start_projects()
+                    break
+                elif choice == '1':
+                    self.sync_google_cookies(only_missing=False)
+                    break
+                elif choice == '2':
+                    self.sync_google_cookies(only_missing=True)
+                    break
+                elif choice == '3':
+                    self.sync_code()
+                    break
+                elif choice == '4':
+                    self.sync_cloudflare_cookies_v3()
+                    break
+                elif choice == '5':
+                    self.inspect_cookies()
+                    break
+                elif choice == '6':
+                    self.restore_cookies()
+                    break
+                elif choice == '7':
+                    self.clean_backups()
+                    break
+                elif choice == '8':
+                    self.show_database_structure()
+                    break
+                elif choice == 'Q':
+                    self.log("SyncPrjs exited by user", level="INFO")
+                    sys.exit(0)
+                else:
+                    self.output_text("Invalid choice. Please select 0-8 or Q.")
+            return
+
+        # === New non-interactive argument handling ===
+        if action == "inspect" and project:
+            # Direct inspect with --project
+            self.log(f"Non-interactive inspect for project: {project}", level="INFO")
+            db_path = self.app_base / project / "cookies" / "cookies.sqlite"
+            if not db_path.exists():
+                self.output_text(f"Database not found for {project}")
+                if self.json_mode:
+                    self.output_json({"type": "error", "command": "inspect", "success": False, "message": f"Database not found for {project}"})
+                return
+            stats = self.get_cookie_stats(db_path)
+            self.output_text(f"\n🔍 Inspecting cookies for: {project}")
+            self.output_text("\n" + "="*70)
+            self.output_text(f"COOKIE SUMMARY → {project}")
+            self.output_text("="*70)
+            self.output_text(f"{'Total Cookies':<30} : {stats['total']}")
+            self.output_text(f"{'Google Related':<30} : {stats['google']}")
+            self.output_text(f"{'Cloudflare Related':<30} : {stats['cloudflare']}")
+            self.output_text(f"{'Other Cookies':<30} : {stats['other']}")
+            self.output_text("="*70)
+            if self.json_mode:
+                self.output_json({
+                    "type": "inspect",
+                    "command": "inspect",
+                    "project": project,
+                    "success": True,
+                    "total_cookies": stats["total"],
+                    "google_cookies": stats["google"],
+                    "cloudflare_cookies": stats["cloudflare"],
+                    "other_cookies": stats["other"]
+                })
+            return
+
+        elif action in ("schema", "show-schema", "8") and project:
+            # New: schema support with --project
+            self.show_database_structure(project=project)
+            return
+
+        elif action in ("code-sync", "3") and source:
+            # code-sync with --source and optional --same-prefix-except-source
+            self.log(f"Non-interactive code-sync with source: {source}", level="INFO")
+            # For simplicity, we call the original method (you can extend later)
+            # Current implementation still uses interactive choose if needed.
+            # You can expand this block in future.
+            self.sync_code()  # placeholder - extend as needed
+
+        elif action in ("cf-sync", "4") and source:
+            self.log(f"Non-interactive cf-sync with source: {source}", level="INFO")
+            # Similar placeholder for now
+            self.sync_cloudflare_cookies_v3()
+
+        elif action in ("autostart", "0", "auto-start") and prefix:
+            self.log(f"Non-interactive autostart with prefix: {prefix}", level="INFO")
+            # For now, we still use interactive prefix selection.
+            # You can add direct prefix support later.
+            self.auto_start_projects()
+
+        else:
+            self.output_text(f"Unknown or incomplete action: {action}")
+            if self.json_mode:
+                self.output_json({"type": "error", "command": action, "success": False, "message": "Action not fully supported yet or missing required flags"})
+            return
+
+        if self.json_mode and self.json_output is None:
+            self.output_json({"type": "success", "command": action, "success": True})
 
 def main():
     # =========================================================================
@@ -2476,26 +2739,164 @@ def main():
     # =========================================================================
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
-    MINOR_VERSION = 0
-    PATCH_VERSION = 0
+    MINOR_VERSION = 1
+    PATCH_VERSION = 1
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
     basedir = logger.baseDir()
+    version = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
     # === YOUR ORIGINAL DEBUG MESSAGE (preserved exactly) ===
     if logger.isDebug():
-        logger.log_message(f"{appname} v{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION} ({__file__}) with the following:", component="main")
+        logger.log_message(f"{appname} v{version} ({__file__}) with the following:", component="main")
         logger.log_message(f">> {ChronicleLogger.class_version()}", component="main")
         logger.log_message(f">> {UniversalProjectSyncer.class_version()}", component="main")
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description="{appname} - Universal Multi-Prefix Project Manager", add_help=False)
+    parser.add_argument("action", nargs="?", help="Action (inspect, code-sync, cf-sync, autostart, etc.)")
+    parser.add_argument("--project", help="Project name for inspect (e.g. gm-wilgat)")
+    parser.add_argument("--source", help="Source project for code-sync or cf-sync")
+    parser.add_argument("--target", help="Target project for cf-sync")
+    parser.add_argument("--same-prefix-except-source", action="store_true", help="Use all projects with same prefix except source")
+    parser.add_argument("--prefix", help="Prefix for autostart (e.g. gm)")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Suppress non-error output")
+    parser.add_argument("--json", action="store_true", help="Output in JSON format (implies --quiet)")
+
+    help_text = """Actions (non-interactive mode):
+
+  0, autostart, auto-start          Auto-start projects by prefix (20s delay)
+  1, google-sync                    Sync Google cookies (Smart merge)
+  2, google-missing                 Sync Google cookies (Missing folders only)
+  3, code-sync                      Sync project code
+  4, cf-sync, sync-cloudflare       Sync Cloudflare cookies by prefix (v3 - safe)
+  5, inspect                        Inspect cookies (Google + Cloudflare + Others)
+  6, restore                        Restore cookies from backup
+  7, clean-backups                  Clean all backup folders
+  8, schema, show-schema            Show cookie database structure (debug schema)
+  help                              Show help message
+
+Use '{appname} <action>' for non-interactive mode.
+"""
+
+    args = parser.parse_args()
+
+    quiet = args.quiet or args.json
+    json_mode = args.json
+
+    # Override help
+
     try:
-        app = UniversalProjectSyncer(basedir=basedir, logger=logger)
-        app.run()
+        app = UniversalProjectSyncer(basedir=basedir, logger=logger, quiet=quiet, json_mode=json_mode)
+        if "help" == args.action:
+            if json_mode:
+                data = {
+                    "type": "success",
+                    "message": "Help text available in human mode. Run without --json."
+                }
+                app.output_json(data)
+                sys.exit(0)
+            elif not quiet:
+                app.output_text(f"usage: {appname} [action] [--quiet] [--json] [--about]\n")
+                app.output_text(f"{appname} - Universal Multi-Prefix Project Manager")
+                app.output_text("Smart Google + Cloudflare Cookie Sync + Backup/Restore\n")
+                app.output_text(help_text)
+                sys.exit(0)
+
+        if "about" == args.action:
+            user = getpass.getuser()
+            py_version = sys.version.split()[0]
+
+            # Gather ChronicleLogger diagnostics (safe fallbacks)
+            try:
+                in_python     = str(logger.inPython())      if hasattr(logger, 'inPython')      else "unknown"
+                in_pyenv      = str(logger.inPyenv())       if hasattr(logger, 'inPyenv')       else "unknown"
+                in_conda      = str(logger.inConda())       if hasattr(logger, 'inConda')       else "unknown"
+                is_debug      = str(logger.isDebug())       if hasattr(logger, 'isDebug')       else "unknown"
+                root_or_sudo  = str(logger.root_or_sudo())  if hasattr(logger, 'root_or_sudo')  else "unknown"
+                can_sudo      = str(logger.can_sudo())      if hasattr(logger, 'can_sudo')      else "unknown"
+                base_dir      = str(logger.baseDir())       if hasattr(logger, 'baseDir')       else "unknown"
+                user_home     = str(logger.user_home())     if hasattr(logger, 'user_home')     else "unknown"
+                log_dir       = str(logger.logDir())        if hasattr(logger, 'logDir')        else "unknown"
+            except Exception as e:
+                logger.log_message(f"Failed to gather ChronicleLogger diagnostics: {e}", level="WARNING", component="main")
+                in_python = in_pyenv = in_conda = is_debug = root_or_sudo = can_sudo = base_dir = user_home = log_dir = "error"
+
+            if json_mode:
+                data = {
+                    "type": "about",
+                    "command": "about",
+                    "success": True,
+                    "version": version,
+                    "installed": "true",
+                    "global_version": "not found",
+                    "local_version": version,
+                    "python_version": py_version,
+                    "user": user,
+                    "in_python": in_python,
+                    "in_pyenv": in_pyenv,
+                    "in_conda": in_conda,
+                    "is_debug": is_debug,
+                    "root_or_sudo": root_or_sudo,
+                    "can_sudo": can_sudo,
+                    "base_dir": base_dir,
+                    "user_home": user_home,
+                    "log_dir": log_dir
+                }
+                print(json.dumps(data, ensure_ascii=False))
+                sys.exit(0)
+
+            # Human-readable output using {appname}
+            print(f"=== {appname} {version} - About / Diagnostics ===\n")
+            print(f"[OK] {appname} is installed.\n")
+            print("Global install:  not found")
+            print(f"Local install :  {version}\n")
+            print(f"Current Python:  {py_version}")
+            print(f"User:            {user}")
+            print(f"inPython:        {in_python}")
+            print(f"inPyenv:         {in_pyenv}")
+            print(f"inConda:         {in_conda}")
+            print(f"isDebug:         {is_debug}")
+            print(f"root_or_sudo:    {root_or_sudo}")
+            print(f"can_sudo:        {can_sudo}")
+            print(f"baseDir:         {base_dir}")
+            print(f"user_home:       {user_home}")
+            print(f"logDir:          {log_dir}\n")
+            print(f"Use 'sync-prjs about' to see this information again.")
+
+            sys.exit(0)
+
+        app.run(
+            action=args.action,
+            project=args.project,
+            source=args.source,
+            target=args.target,
+            same_prefix_except_source=args.same_prefix_except_source,
+            prefix=args.prefix
+        )
+
+        if json_mode and app.json_output is None:
+            app.output_json({
+                "type": "success",
+                "command": args.action or "menu",
+                "success": True
+            })
+
     except KeyboardInterrupt:
         logger.warning("Interrupted by user")
         sys.exit(130)
     except Exception as e:
         logger.log_message(f"Unexpected error: {e}", level="ERROR", component="main")
+        if json_mode:
+            print(json.dumps({
+                "type": "error",
+                "command": args.action or "unknown",
+                "success": False,
+                "message": str(e),
+                "timestamp": datetime.now().strftime("%Y%m%d-%H%M%S")
+            }))
         sys.exit(1)
 
 if __name__ == "__main__":

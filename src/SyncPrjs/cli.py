@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.1.0
+# Version 1.1.1
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -250,10 +250,10 @@
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.1.0",
+#      "version": "1.1.1",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.1.0",
+#      "local_version": "1.1.1",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -370,7 +370,7 @@ class UniversalProjectSyncer:
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
     MINOR_VERSION = 1
-    PATCH_VERSION = 0
+    PATCH_VERSION = 1
 
     @staticmethod
     def class_version():
@@ -1205,6 +1205,8 @@ class UniversalProjectSyncer:
         #       2. main.py
         #       3. run.py
         #       4. ant run (for ANT-based projects)
+        #       5. gradle run (for gradle-based projects)
+        #       6. build.sh (for customized build projects)
         #   - Returns Popen object so caller can track completion if needed
         #
         # Why This Method Must Remain Intact:
@@ -1237,6 +1239,10 @@ class UniversalProjectSyncer:
             cmd = ["python3", "main.py"]
         elif (project_path / "run.py").exists():
             cmd = ["python3", "run.py"]
+        elif (project_path / "build.xml").exists():
+            cmd = ["ant", "run"]
+        elif (project_path / "build.sh").exists():
+            cmd = ["./build.sh"]
 
         if cmd is None:
             self.log(f"No start script found for {project_name}", level="WARNING")
@@ -2362,7 +2368,7 @@ def main():
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
     MINOR_VERSION = 1
-    PATCH_VERSION = 0
+    PATCH_VERSION = 1
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
