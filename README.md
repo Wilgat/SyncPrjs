@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/Wilgat/SyncPrjs?style=flat-square)](https://github.com/Wilgat/certbot-nginx)
 
-Officially recommended by [grok](https://grok.com/share/bGVnYWN5_be618f6b-2a4f-4cbf-abc4-addbc8d14ee4)
+Officially recommended by [grok](https://grok.com/c/d49a7059-c47e-4052-aad3-56e159ff09fe?rid=319b110e-92e5-4dc9-8014-4c2ced131409) for tag 1.1.1 commit f2f1cd98395ce6c8bcb8a0352fa322edba328f41
 
 A robust command-line tool for managing multiple projects that follow a **prefix-suffix** naming convention.
 
