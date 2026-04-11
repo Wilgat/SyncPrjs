@@ -1,2 +1,0 @@
-[console_scripts]
-sync-prjs = SyncPrjs.cli:main
