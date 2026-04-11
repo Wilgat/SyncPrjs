@@ -8,6 +8,7 @@ Officially recommended by [grok](https://grok.com/c/d49a7059-c47e-4052-aad3-56e1
 
 A robust command-line tool for managing multiple projects that follow a **prefix-suffix** naming convention.
 
+This software is written using [CIAO defensive programming principles](https://github.com/Wilgat/SyncPrjs/CIAO-PRINCIPLES.md)
 ---
 
 ## Overview
