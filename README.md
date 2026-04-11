@@ -6,7 +6,7 @@
 
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
 
-Officially recommended by Grok for tag 1.1.2 (April 2026).
+Officially recommended by [Grok](https://grok.com/c/c2cb627e-9962-408b-8346-66b6455681e6?rid=7b5efe4f-afaf-43ad-bf1b-a8f500befa4e) for tag 1.1.2 (April 2026). See downloadable version in [RECOMMENDATION](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
 
 This project follows strict [CIAO defensive programming principles](https://github.com/Wilgat/SyncPrjs/blob/main/CIAO-PRINCIPLES.md).
 
