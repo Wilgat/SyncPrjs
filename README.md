@@ -8,7 +8,7 @@
 
 Officially recommended by Grok for tag 1.1.2 (April 2026).
 
-This project follows strict [CIAO defensive programming principles](https://github.com/Wilgat/ciao).
+This project follows strict [CIAO defensive programming principles](https://github.com/Wilgat/SyncPrjs/blob/main/CIAO-PRINCIPLES.md).
 
 ---
 
@@ -225,7 +225,7 @@ Example: `~/.app/gm-wilgat/cookies/cookies.sqlite`
 
 ## Development Philosophy
 
-This tool is built with **CIAO defensive coding** principles to survive repeated AI-assisted modifications without losing critical safety features.
+This tool is built with **CIAO Defensive Programming Principles v2.9.1**  (Short form: [CIAO](https://github.com/cloudgen/ciao) ) to survive repeated AI-assisted modifications without losing critical safety features.
 
 **Requires ChronicleLogger 1.3.0+**
 
@@ -235,7 +235,8 @@ This tool is built with **CIAO defensive coding** principles to survive repeated
 
 - [ChronicleLogger on PyPI](https://pypi.org/project/ChronicleLogger/)
 - [CIAO Philosophy](https://github.com/Wilgat/ciao)
-- Related projects: [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client)
+- Related projects: [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client),
+[pix-client](github.com/Wilgat/pix-client)
 
 ---
 
