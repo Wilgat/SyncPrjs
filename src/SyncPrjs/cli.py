@@ -419,13 +419,13 @@ class UniversalProjectSyncer:
         self.json_mode = json_mode
         self.json_output = None  # Will hold the final JSON data
 
-    def output_text(self, message: str, level: str = "INFO"):
+    def output_text(self, message: str, level: str = "INFO", endswith='\n'):
         """Single source of truth for all human-readable output."""
         if self.json_mode:
             return  # Silent in JSON mode
         if self.quiet and level != "ERROR":
             return
-        print(message)
+        print(message, end=endswith)
 
     def output_json(self, data: dict):
         """Emit exactly one JSON object. Must be called at most once per run."""
@@ -1556,7 +1556,7 @@ class UniversalProjectSyncer:
         # Perform safe sync
         success = 0
         for proj in targets:
-            self.output_text(f"   Processing {proj} ... ", end="")
+            self.output_text(f"   Processing {proj} ... ", endswith="")
             target_cookie = self.app_base / proj / "cookies" / "cookies.sqlite"
 
             # Mandatory backup using v2 with correct full project name
@@ -1696,7 +1696,7 @@ class UniversalProjectSyncer:
                 if only_missing and target_dir.exists():
                     continue
 
-                self.output_text(f"   {proj:<22} ", end="")
+                self.output_text(f"   {proj:<22} ", endswith="")
 
                 if not target_dir.exists() or only_missing:
                     ok = self.full_cookie_copy(gm_cookie, target_cookie)
@@ -1841,34 +1841,101 @@ class UniversalProjectSyncer:
     #   - Never remove post_sync_actions() call
     #   - Keep detailed progress output (renamed files, modified text files)
     #
+    # Backup Rules (Exact as requested):
+    #   - If target exists AND is not empty:
+    #       Backup created in the **same parent folder** as target
+    #       Format: {target_name}.YYYYMMDD-N.bak
+    #       Example: yt-ben.20260412-1.bak
+    #   - Sequential -N counter per day
+    #   - Then wipe all content inside target
+    #   - Then clean copy + rename + text replace
+    #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
+
     def sync_project(self, source_dir: str, target_dir: str, old_suffix: str, new_suffix: str) -> bool:
         if target_dir == source_dir:
             self.output_text(f"  SKIPPED: {target_dir} is source")
             self.log(f"Skipped sync: {target_dir} is the source directory", level="INFO")
             return False
 
-        target_path = Path(target_dir)
         source_path = Path(source_dir)
+        target_path = Path(target_dir).resolve()
 
         self.output_text(f"\nSYNC → {target_dir}")
-        if target_path.exists():
-            shutil.rmtree(target_path)
 
-        shutil.copytree(source_path, target_path)
+        backup_path = None
 
-        # Rename files and directories
+        # ====================== BACKUP IF TARGET EXISTS AND IS NOT EMPTY ======================
+        if target_path.exists() and any(target_path.iterdir()):   # target exists and is not empty
+            self.output_text(f"   📦 Target not empty → creating backup...", endswith="")
+
+            today = datetime.now().strftime("%Y%m%d")
+            parent_dir = target_path.parent
+            base_name = f"{target_path.name}.{today}"
+
+            # Find next sequential number (1, 2, 3, ...)
+            n = 1
+            while True:
+                backup_name = f"{base_name}-{n}.bak"
+                backup_path = parent_dir / backup_name
+                if not backup_path.exists():
+                    break
+                n += 1
+
+            try:
+                shutil.copytree(target_path, backup_path)
+                self.output_text(" ✅")
+                self.output_text(f"   💾 Backup created → {backup_name}")
+                self.log(f"Project backup created before wipe: {backup_path}", level="INFO")
+            except Exception as e:
+                self.output_text(" ❌")
+                self.log(f"Backup failed for {target_dir}: {e}", level="ERROR")
+                self.output_text("   ⚠️  Backup failed → aborting sync for safety.")
+                return False
+
+            # ====================== WIPE CONTENT INSIDE TARGET ======================
+            self.output_text(f"   🗑️  Wiping all files and subfolders inside {target_dir} ...", endswith="")
+            try:
+                for item in list(target_path.iterdir()):
+                    if item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink(missing_ok=True)
+                self.output_text(" ✅")
+                self.log(f"Target content wiped: {target_dir}", level="INFO")
+            except Exception as e:
+                self.output_text(" ❌")
+                self.log(f"Failed to wipe {target_dir}: {e}", level="ERROR")
+                return False
+        else:
+            status = "empty" if target_path.exists() else "new"
+            self.output_text(f"   (Target is {status} → no backup needed)")
+
+        # ====================== CLEAN COPY FROM SOURCE ======================
+        try:
+            if target_path.exists():
+                shutil.rmtree(target_path)   # remove empty folder to avoid copytree error
+            shutil.copytree(source_path, target_path)
+            self.output_text(f"   📋 Fresh structure copied from {source_dir}")
+        except Exception as e:
+            self.output_text(f"   ❌ Copy failed: {e}")
+            self.log(f"copytree failed {source_dir} → {target_dir}: {e}", level="ERROR")
+            return False
+
+        # ====================== RENAME + TEXT REPLACEMENT ======================
         renamed = 0
         for root, dirs, files in os.walk(target_path, topdown=False):
             for name in list(dirs) + list(files):
                 if old_suffix in name:
                     old_p = Path(root) / name
                     new_p = Path(root) / name.replace(old_suffix, new_suffix)
-                    shutil.move(str(old_p), str(new_p))
-                    renamed += 1
+                    try:
+                        shutil.move(str(old_p), str(new_p))
+                        renamed += 1
+                    except Exception as e:
+                        self.log(f"Rename failed {old_p} → {new_p}: {e}", level="WARNING")
 
-        # Replace text content
         changed = scanned = 0
         for fp in target_path.rglob("*"):
             if fp.is_file() and self.is_text_file(fp):
@@ -1878,8 +1945,96 @@ class UniversalProjectSyncer:
 
         self.output_text(f"  Renamed {renamed} files | Modified {changed}/{scanned} text files")
         self.post_sync_actions(target_path)
-        self.log(f"Project sync completed → {target_dir} | Renamed:{renamed} Modified:{changed}/{scanned}", level="INFO")
+
+        backup_info = f" | Backup: {backup_path.name}" if backup_path else ""
+        self.log(f"Project sync completed → {target_dir}{backup_info} | "
+                 f"Renamed:{renamed} Modified:{changed}/{scanned}", level="INFO")
+
         return True
+
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - REMOVE BACKUP FOLDERS (NEW OPTION 7)
+    # =========================================================================
+    #
+    # !!! DO NOT REMOVE, SIMPLIFY, OR COMMENT OUT ANY PART OF THIS HEADER !!!
+    #
+    # Purpose:
+    #   Allows user to safely remove backup folders created by:
+    #     - Project code sync (*.YYYYMMDD-N.bak and *.syncbak.*.bak)
+    #     - Cookie backups (*.YYYYMMDD-N.bak)
+    #   Scans the parent directory of projects and ~/.app/ for safety.
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
+    def remove_backup_folders(self):
+        self.log("User selected Option 7: Remove backup folders", level="INFO")
+        self.output_text("\n🗑️  Remove Backup Folders")
+        self.output_text("   This will delete backup folders created by sync and cookie operations.\n")
+
+        # Ask user what type of backups to remove
+        self.output_text("Choose backup type to remove:")
+        self.output_text("  [1] Sync backups only (*.syncbak.*.bak and *.YYYYMMDD-N.bak in project folders)")
+        self.output_text("  [2] Cookie backups only (in ~/.app/)")
+        self.output_text("  [3] Both sync and cookie backups")
+        self.output_text("  [Q] Quit")
+
+        while True:
+            c = input("\nChoose: ").strip().upper()
+            if c == 'Q':
+                sys.exit(0)
+            if c in ('1', '2', '3'):
+                mode = int(c)
+                break
+            self.output_text("Invalid choice.")
+
+        deleted_count = 0
+        deleted_list = []
+
+        # Get all project folders to scan their parent directories
+        groups = self.get_all_hyphen_folders()
+        project_parents = set()
+
+        for prefix_projects in groups.values():
+            for proj_name, _ in prefix_projects:
+                proj_path = Path(proj_name).resolve()
+                if proj_path.exists():
+                    project_parents.add(proj_path.parent)
+
+        # Also always scan ~/.app/ for cookie backups
+        app_base = self.app_base
+
+        # Helper to delete matching backup folders
+        def delete_backups_in_dir(directory: Path, patterns: list):
+            nonlocal deleted_count
+            if not directory.exists():
+                return
+            for item in list(directory.iterdir()):
+                if not item.is_dir():
+                    continue
+                name = item.name
+                if any(name.endswith(p) or ('.bak' in name and any(pt in name for pt in patterns)) for p in patterns):
+                    try:
+                        shutil.rmtree(item, ignore_errors=True)
+                        deleted_list.append(str(item))
+                        deleted_count += 1
+                        self.output_text(f"   🗑️  Deleted: {item.name}")
+                    except Exception as e:
+                        self.output_text(f"   ⚠️  Failed to delete {item.name}: {e}")
+
+        if mode in (1, 3):  # Sync backups
+            self.output_text("\nScanning for sync backups in project folders...")
+            for parent in project_parents:
+                delete_backups_in_dir(parent, [".syncbak.", ".bak"])
+
+        if mode in (2, 3):  # Cookie backups
+            self.output_text("\nScanning for cookie backups in ~/.app/...")
+            delete_backups_in_dir(app_base, [".bak"])
+
+        if deleted_list:
+            self.output_text(f"\n✅ Removed {deleted_count} backup folder(s).")
+            self.log(f"Backup removal completed | Removed {deleted_count} folders", level="INFO")
+        else:
+            self.output_text("\nNo matching backup folders found.")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - SAFE MERGE GOOGLE COOKIES (SECURITY CRITICAL + BACKUP PROTECTED)
@@ -2235,8 +2390,9 @@ class UniversalProjectSyncer:
             self.output_text("4. Sync Cloudflare cookies by prefix (v3 - safe)")
             self.output_text("5. Inspect cookies (Google + Cloudflare + Others)")
             self.output_text("6. Restore cookies from backup")
-            self.output_text("7. Clean all backup folders")
-            self.output_text("8. Show cookie database structure (debug schema)")
+            self.output_text("7. Remove backup folders (sync + cookie backups)")
+            self.output_text("8. Clean all backup folders (old behavior)")
+            self.output_text("9. Show cookie database structure (debug schema)")
             self.output_text("Q. Quit")
             self.output_text("=" * 80)
 
@@ -2265,16 +2421,19 @@ class UniversalProjectSyncer:
                     self.restore_cookies()
                     break
                 elif choice == '7':
-                    self.clean_backups()
+                    self.remove_backup_folders()      # NEW OPTION
                     break
                 elif choice == '8':
+                    self.clean_backups()
+                    break
+                elif choice == '9':
                     self.show_database_structure()
                     break
                 elif choice == 'Q':
                     self.log("SyncPrjs exited by user", level="INFO")
                     sys.exit(0)
                 else:
-                    self.output_text("Invalid choice. Please select 0-8 or Q.")
+                    self.output_text("Invalid choice. Please select 0-9 or Q.")
             return
 
         # =====================================================================
@@ -2503,15 +2662,16 @@ Smart Google + Cloudflare Cookie Sync + Backup/Restore
 
 Actions (non-interactive mode):
 
-  0, autostart, auto-start          Auto-start projects by prefix (use --prefix gm-)
+0, autostart, auto-start          Auto-start projects by prefix (use --prefix gm-)
   1, google-sync                    Sync Google cookies (Smart merge)
   2, google-missing                 Sync Google cookies (Missing folders only)
   3, code-sync                      Sync project code
   4, cf-sync, sync-cloudflare       Sync Cloudflare cookies by prefix (v3 - safe)
   5, inspect                        Inspect cookies
   6, restore                        Restore cookies from backup
-  7, clean-backups                  Clean all backup folders
-  8, schema, show-schema            Show cookie database structure
+  7, remove-backups                 Remove backup folders (sync + cookie backups)
+  8, clean-backups                  Clean all backup folders
+  9, schema, show-schema            Show cookie database structure
   about                             Show version and diagnostic information
   help                              Show this help message
 

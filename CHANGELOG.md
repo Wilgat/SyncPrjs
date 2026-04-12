@@ -1,62 +1,56 @@
-# SyncPrjs Changelog
+# CHANGELOG.md
 
-## [1.1.2] - 2026-04-12
+## [Version 1.3.1] - 2026-04-12
+### Added
+- `quiet()` method to get or set the `__is_quiet__` flag after object instantiation.
+  This allows dynamic enabling/disabling of console output (`prn()` / `prn_err()`) without recreating the logger.
 
-### Important Fixes & Improvements
-
-- **Non-interactive autostart now fully functional**:
-  - `sync-prjs autostart --prefix gm` (and `--prefix gm-`) now launches projects directly without asking for prefix selection again.
-  - Proper normalization and error handling for prefix.
-
-- **Quiet mode (`--quiet` / `-q`) now properly respected**:
-  - `sync-prjs about --quiet` produces **no output** (as documented in CIAO quiet contract).
-  - `sync-prjs help --quiet` produces **no output**.
-  - Only critical errors are shown in quiet mode.
-
-- **Help command improved**:
-  - Exact usage line: `usage: sync-prjs [action] [--quiet] [--json] [--about]`
-  - Clear documentation of all supported switches (`--prefix`, `--project`, `--source`, `--target`, `--same-prefix-except-source`, `--quiet`, `--json`, `--about`).
-  - Consistent use of `sync-prjs` (executable) in usage/examples and `SyncPrjs` (display name).
-  - Better examples section.
-
-- **JSON mode robustness**:
-  - Cleaner JSON output contract adherence for `about`, `inspect`, `help`, and error cases.
-
-- **Dependency update**:
-  - Upgraded `ChronicleLogger` from 1.2.3 to **1.3.0**.
-
-- **Defensive coding (CIAO style)**:
-  - Strengthened headers and comments around non-interactive paths.
-  - Improved logging for non-interactive actions.
-  - Better error messages when prefix/project is missing or invalid.
-
-### Behavior Changes
-
-| Command                              | Before          | After           |
-|--------------------------------------|-----------------|-----------------|
-| `sync-prjs autostart --prefix gm`    | Interactive     | Direct launch   |
-| `sync-prjs about --quiet`            | Full output     | Silent          |
-| `sync-prjs help --quiet`             | Full output     | Silent          |
-| `sync-prjs help`                     | Old format      | Updated + clear |
-
-### Compatibility
-
-- Requires **ChronicleLogger >= 1.3.0**
-- Fully backward compatible with existing interactive menu.
+### Changed
+- Updated class version to 1.3.1 (internal `MAJOR_VERSION`, `MINOR_VERSION`, `PATCH_VERSION` should be bumped accordingly if not already done).
 
 ---
 
-## [1.1.1] - 2026-04 (Previous)
+## [Unreleased]
+### Added
+- Initial support for semantic versioning tracking in documentation.
+- Recommendations for Git initialization and .gitignore integration to track changelog updates.
 
-- Initial v2 backup system, Cloudflare v3 separation, etc.
+### Changed
+- Updated changelog structure to follow standard categories (Added, Changed, Deprecated, Removed, Fixed, Security) for better readability and reverse chronological order.
+- Renamed file header to "CHANGELOG.md" for consistency with common project conventions.
+
+### Fixed
+- Corrected version dates and descriptions for clarity; ensured concise, informative entries.
 
 ---
 
-## How to use this
+## [Version 1.1.0] - 2025-09-26
+### Added
+- Python 2.7 compatibility shims, including DEVNULL fallback, sys.exc_info() handling, and io.open conditional for UTF-8 writes.
+- Sudo timeout (5s in Py3.3+) and non-interactive privilege detection via subprocess.Popen(["sudo", "-n", "true"]).
+- Lazy evaluation for paths, debug mode, and inPython() context checking.
 
-1. Create or update `CHANGELOG.md` in the root of the project with the content above.
-2. Update the version in `main()` to `1.1.2` (already done in your code).
-3. After release, you can run:
+### Changed
+- Log name kebab-casing in Python mode (e.g., "TestApp" → "test-app") via regex, preserved in Cython binaries.
+- Path resolution: should_use_system_paths() now True for native root (euid==0 without sudo), using /var/log/<app>; user paths (~/.app/<app>/log) for sudo-elevated or normal users.
+- Exception handling with version-conditional sys.exc_info() for Py2/3 cross-compatibility.
 
-```bash
-sync-prjs about
+### Fixed
+- f-string replacements with .format() for Py2 support; basestring fallback and __future__ imports for print/division/unicode.
+- Permission checks and directory creation with os.makedirs() and error logging to stderr.
+
+### Security
+- Non-blocking sudo checks to avoid hangs in CI/CD; DEVNULL shim prevents output leaks.
+
+---
+
+## [Version 0.1.1] - 2025-12-12
+### Changed
+- Added tests for Python 2.7 compatibility, including mock fallback and tmpdir fixtures.
+- Enhanced compatibility for both Python 2+ and 3+, with conditional imports and string/byte handling.
+
+---
+
+## [Version 0.1.0] - 2025-12-05
+### Changed
+- Initial commit with core logging functionality, daily rotation, and basic privilege detection.
