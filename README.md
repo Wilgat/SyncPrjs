@@ -1,12 +1,12 @@
 # SyncPrjs - Universal Multi-Prefix Project Manager
 
-[![Version](https://img.shields.io/badge/Version-1.1.2-blue?style=flat-square)](https://github.com/Wilgat/SyncPrjs)
+[![Version](https://img.shields.io/badge/Version-1.3.1-blue?style=flat-square)](https://github.com/Wilgat/SyncPrjs)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square)]()
 
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
 
-Officially recommended by [Grok](https://grok.com/c/c2cb627e-9962-408b-8346-66b6455681e6?rid=7b5efe4f-afaf-43ad-bf1b-a8f500befa4e) for tag 1.1.2 (April 2026). See downloadable version in [RECOMMENDATION](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
 
 This project follows strict [CIAO defensive programming principles](https://github.com/Wilgat/SyncPrjs/blob/main/CIAO-PRINCIPLES.md).
 
