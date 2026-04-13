@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.1.2
+# Version 1.3.1
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -2341,36 +2341,6 @@ class UniversalProjectSyncer:
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
-    # =========================================================================
-    # CIAO DEFENSIVE CODING STYLE - RUN METHOD (MAIN MENU)
-    # =========================================================================
-    #
-    # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY THE MENU STRUCTURE !!!
-    # !!! THIS IS THE SINGLE ENTRY POINT FOR ALL USER INTERACTIONS !!!
-    #
-    # Purpose:
-    #   Displays the main interactive menu and dispatches user choices to
-    #   the appropriate methods (auto-start, cookie sync, code sync, inspection).
-    #
-    # Critical Features (Protected):
-    #   - Clear numbered options with descriptions
-    #   - Full support for both interactive menu and non-interactive CLI arguments
-    #   - Proper handling of --prefix for autostart (now fully functional)
-    #   - JSON/quiet mode contract respected
-    #
-    # Why This Method Must Remain Intact:
-    #   - Serves as the central control flow for the entire tool
-    #   - Any change to option numbers or flow would break user muscle memory
-    #   - Must preserve logging of every user selection for audit trails
-    #
-    # CIAO Protection Rules:
-    #   - Never remove or renumber any menu options
-    #   - Never merge or eliminate the while True input loop in interactive mode
-    #   - Keep full logging of user choices and exit
-    #   - This header must stay completely intact
-    #
-    # Last aligned with CIAO defensive style: April 2026
-    # =========================================================================
     def run(self, action: Optional[str] = None, project: Optional[str] = None,
             source: Optional[str] = None, target: Optional[str] = None,
             same_prefix_except_source: bool = False, prefix: Optional[str] = None):
@@ -2637,12 +2607,6 @@ def main():
     basedir = logger.baseDir()
     version = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
 
-    # === YOUR ORIGINAL DEBUG MESSAGE (preserved exactly) ===
-    if logger.isDebug():
-        logger.log_message(f"{appname} v{version} ({__file__}) with the following:", component="main")
-        logger.log_message(f">> {ChronicleLogger.class_version()}", component="main")
-        logger.log_message(f">> {UniversalProjectSyncer.class_version()}", component="main")
-
     import argparse
 
     parser = argparse.ArgumentParser(description="{appname} - Universal Multi-Prefix Project Manager", add_help=False)
@@ -2655,7 +2619,30 @@ def main():
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress non-error output")
     parser.add_argument("--json", action="store_true", help="Output in JSON format (implies --quiet)")
 
-    help_text = help_text = f"""usage: {appname} [action] [--quiet] [--json] 
+    args = parser.parse_args()
+
+    quiet = args.quiet or args.json
+    json_mode = args.json
+    logger.quiet(quiet)
+
+    # === YOUR ORIGINAL DEBUG MESSAGE (preserved exactly) ===
+    if logger.isDebug():
+        logger.log_message(f"{appname} v{version} ({__file__}) with the following:", component="main")
+        logger.log_message(f">> {ChronicleLogger.class_version()}", component="main")
+        logger.log_message(f">> {UniversalProjectSyncer.class_version()}", component="main")
+
+    try:
+        app = UniversalProjectSyncer(basedir=basedir, logger=logger, quiet=quiet, json_mode=json_mode)
+        if "help" == args.action:
+            if json_mode:
+                data = {
+                    "type": "success",
+                    "message": "Help text available in human mode. Run without --json."
+                }
+                app.output_json(data)
+                sys.exit(0)
+            elif not quiet:
+                help_text =  f"""usage: {appname} [action] [--quiet] [--json] 
 
 {appname} - Universal Multi-Prefix Project Manager
 Smart Google + Cloudflare Cookie Sync + Backup/Restore
@@ -2693,24 +2680,6 @@ Examples:
   {appname} about --quiet
   {appname} help
 """
-    args = parser.parse_args()
-
-    quiet = args.quiet or args.json
-    json_mode = args.json
-
-    # Override help
-
-    try:
-        app = UniversalProjectSyncer(basedir=basedir, logger=logger, quiet=quiet, json_mode=json_mode)
-        if "help" == args.action:
-            if json_mode:
-                data = {
-                    "type": "success",
-                    "message": "Help text available in human mode. Run without --json."
-                }
-                app.output_json(data)
-                sys.exit(0)
-            elif not quiet:
                 app.output_text(f"usage: {appname} [action] [--quiet] [--json] [--about]\n")
                 app.output_text(f"{appname} - Universal Multi-Prefix Project Manager")
                 app.output_text("Smart Google + Cloudflare Cookie Sync + Backup/Restore\n")
