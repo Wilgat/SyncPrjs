@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## [Version 1.3.3] - 2026-04-13
+### Changed
+- align version to 1.3.3
+
+---
+
 ## [Version 1.3.1] - 2026-04-12
 ### Added
 - `quiet()` method to get or set the `__is_quiet__` flag after object instantiation.

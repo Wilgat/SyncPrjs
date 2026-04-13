@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.3.1
+# Version 1.3.3
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -250,10 +250,10 @@
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.1.1",
+#      "version": "1.3.3",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.1.1",
+#      "local_version": "1.3.3",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -369,8 +369,8 @@ class UniversalProjectSyncer:
 
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
-    MINOR_VERSION = 1
-    PATCH_VERSION = 2
+    MINOR_VERSION = 3
+    PATCH_VERSION = 3
 
     @staticmethod
     def class_version():
@@ -2599,8 +2599,8 @@ def main():
     # =========================================================================
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
-    MINOR_VERSION = 1
-    PATCH_VERSION = 2
+    MINOR_VERSION = 3
+    PATCH_VERSION = 3
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
