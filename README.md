@@ -5,6 +5,8 @@
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square)]()
 
+Official Recommendation from [grok](https://grok.com/c/919eb1c6-7c5e-449c-baf2-ebccd64050b9?rid=d042201e-7e75-43ff-b3f9-cf5240187be7) see [local copy](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
+
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
 
 
@@ -235,8 +237,8 @@ This tool is built with **CIAO Defensive Programming Principles v2.9.1**  (Short
 
 - [ChronicleLogger on PyPI](https://pypi.org/project/ChronicleLogger/)
 - [CIAO Philosophy](https://github.com/Wilgat/ciao)
-- Related projects: [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client),
-[pix-client](github.com/Wilgat/pix-client)
+- Related projects: [github-client](https://github.com/cloudgen/github-client), [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client),
+[pix-client](https://github.com/Wilgat/pix-client)
 
 ---
 
