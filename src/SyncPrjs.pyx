@@ -374,7 +374,7 @@ from chronicle_logger.ChronicleLogger import ChronicleLogger
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.1.1
+# Version 1.3.4
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -622,10 +622,10 @@ from chronicle_logger.ChronicleLogger import ChronicleLogger
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.1.1",
+#      "version": "1.3.4",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.1.1",
+#      "local_version": "1.3.4",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -741,8 +741,8 @@ class UniversalProjectSyncer:
 
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
-    MINOR_VERSION = 1
-    PATCH_VERSION = 1
+    MINOR_VERSION = 3
+    PATCH_VERSION = 4
 
     @staticmethod
     def class_version():
@@ -791,13 +791,13 @@ class UniversalProjectSyncer:
         self.json_mode = json_mode
         self.json_output = None  # Will hold the final JSON data
 
-    def output_text(self, message: str, level: str = "INFO"):
+    def output_text(self, message: str, level: str = "INFO", endswith='\n'):
         """Single source of truth for all human-readable output."""
         if self.json_mode:
             return  # Silent in JSON mode
         if self.quiet and level != "ERROR":
             return
-        print(message)
+        print(message, end=endswith)
 
     def output_json(self, data: dict):
         """Emit exactly one JSON object. Must be called at most once per run."""
@@ -1230,42 +1230,43 @@ class UniversalProjectSyncer:
             if not self.json_mode:
                 print(f"[{level}] {message}")
 
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - GET ALL HYPHEN FOLDERS HELPER (CORE)
+    # =========================================================================
+    #
+    # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY THIS METHOD !!!
+    # !!! THIS IS THE FOUNDATIONAL PROJECT DETECTION LOGIC !!!
+    #
+    # Purpose:
+    #   Scans the current directory and groups all folders that follow the
+    #   prefix-suffix naming pattern (e.g. grok-xxx, gm-yyy, poe-zzz).
+    #
+    # CRITICAL RULES (MUST BE RESPECTED FOREVER):
+    #   - Exclude backup folders ending with .bak
+    #   - Exclude suspended folders ending with .suspended
+    #   - Split on the FIRST '-' only using split('-', 1)
+    #   - Build prefix as "xxx-" for reliable grouping
+    #   - Always sort each group by suffix
+    #
+    # Lessons learned from April 2026 debugging:
+    #   - .bak and .suspended folders must never appear in any selection list
+    #   - Failing to filter them caused confusion in missing suffix and target selection
+    #
+    # CIAO Protection Rules:
+    #   - Never remove the .bak / .suspended filter
+    #   - Never change split('-', 1) logic
+    #   - Never remove the sorting step
+    #   - This header must remain fully intact so future Grok/AI understand
+    #     why these filters exist
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
     def get_all_hyphen_folders(self) -> Dict[str, List[Tuple[str, str]]]:
-        # =========================================================================
-        # CIAO DEFENSIVE CODING STYLE - GET ALL HYPHEN FOLDERS HELPER (CORE)
-        # =========================================================================
-        #
-        # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY THIS METHOD !!!
-        # !!! THIS IS THE FOUNDATIONAL PROJECT DETECTION LOGIC !!!
-        #
-        # Purpose:
-        #   Scans the current directory and groups all folders that follow the
-        #   prefix-suffix naming pattern (e.g. grok-xxx, gm-yyy, poe-zzz).
-        #   Returns a dictionary keyed by prefix (including trailing '-') with
-        #   sorted lists of (full_name, suffix) tuples.
-        #
-        # Critical Responsibilities (Protected):
-        #   - Correctly splits on the FIRST '-' only using split('-', 1)
-        #   - Builds prefix as "xxx-" to enable reliable grouping
-        #   - Sorts each group by suffix for consistent user selection
-        #   - Used by auto_start_projects(), sync_code(), inspect_cookies(), etc.
-        #
-        # Why This Method Must Remain Intact:
-        #   - Almost every major feature depends on accurate prefix-suffix detection
-        #   - Changing the split logic or sorting would break menu choices and batch operations
-        #   - Previous AI "cleanups" destroyed the grouping behavior, causing wrong project selection
-        #
-        # CIAO Protection Rules:
-        #   - Never change split('-', 1) to split('-') or any other variant
-        #   - Never remove the sorting step (groups[prefix].sort(...))
-        #   - Never simplify the return type or structure
-        #   - Keep this header fully intact for future security/operational audits
-        #
-        # Last aligned with CIAO defensive style: April 2026
-        # =========================================================================
         groups: Dict[str, List[Tuple[str, str]]] = {}
         for p in Path(".").iterdir():
             if p.is_dir() and '-' in p.name:
+                if p.name.endswith('.bak') or p.name.endswith('.suspended'):
+                    continue
                 parts = p.name.split('-', 1)
                 if len(parts) == 2:
                     prefix, suffix = parts[0] + '-', parts[1]
@@ -1928,7 +1929,7 @@ class UniversalProjectSyncer:
         # Perform safe sync
         success = 0
         for proj in targets:
-            self.output_text(f"   Processing {proj} ... ", end="")
+            self.output_text(f"   Processing {proj} ... ", endswith="")
             target_cookie = self.app_base / proj / "cookies" / "cookies.sqlite"
 
             # Mandatory backup using v2 with correct full project name
@@ -2068,7 +2069,7 @@ class UniversalProjectSyncer:
                 if only_missing and target_dir.exists():
                     continue
 
-                self.output_text(f"   {proj:<22} ", end="")
+                self.output_text(f"   {proj:<22} ", endswith="")
 
                 if not target_dir.exists() or only_missing:
                     ok = self.full_cookie_copy(gm_cookie, target_cookie)
@@ -2084,11 +2085,11 @@ class UniversalProjectSyncer:
         self.output_text(f"\n🎉 Done! Successfully synced {success}/{actions} projects.")
         self.log(f"Google cookie sync completed | Success: {success}/{actions} | Mode: {mode}", level="INFO")
 
-    # ====================== CODE SYNC (Original) ======================
-
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - SYNC CODE METHOD (CRITICAL)
     # =========================================================================
+    #
+    # sync_code
     #
     # !!! DO NOT REMOVE, SIMPLIFY, SHORTEN, OR COMMENT OUT ANY PART OF THIS HEADER !!!
     # !!! DO NOT CONVERT TO PLACEHOLDER OR REMOVE REAL LOGIC !!!
@@ -2099,12 +2100,18 @@ class UniversalProjectSyncer:
     #   project to one or more target projects, including automatic renaming of
     #   suffixes in filenames and inside text files.
     #
-    # Critical Features (Protected):
-    #   - Full interactive selection of source and multiple targets
-    #   - Smart detection and optional creation of missing suffixes
-    #   - File tree copy + suffix renaming in both filenames and content
-    #   - Post-sync actions (ant build, .git cleanup)
-    #   - Confirmation step before destructive operations
+    # CRITICAL LESSONS LEARNED FROM APRIL 2026 DEBUGGING (MUST BE RESPECTED FOREVER):
+    #   1. There are EXACTLY TWO DISTINCT ROUNDS of folder selection:
+    #      - Round 1: missing suffix detection and creation (new folders)
+    #      - Round 2: target selection (existing folders)
+    #   2. The final sync operation MUST merge choices from BOTH rounds.
+    #   3. Newly created folders are automatically included when user chooses
+    #      multi-target mode ([Y]), but must be EXCLUDED from the second-round
+    #      selection list to prevent user confusion.
+    #   4. Syncing the source folder to itself is meaningless and was a past
+    #      bug that must never be re-introduced.
+    #   5. Before the final "Proceed with code sync?" question, the code MUST
+    #      explicitly list ALL targets that will be synced (with (NEW) marker).
     #
     # Why This Method Must Remain Intact:
     #   - Directly responsible for maintaining consistency across dozens of
@@ -2113,11 +2120,13 @@ class UniversalProjectSyncer:
     #   - Any "cleaning" by AI previously broke the missing-suffix handling
     #   - Must preserve user safety (confirmation + detailed progress)
     #
-    # CIAO Protection Rules:
-    #   - Never remove missing suffix detection/creation block
-    #   - Never simplify choose_multiple or post_sync_actions calls
-    #   - Never remove the final confirmation prompt
-    #   - Keep full statistics output (renamed files, modified text files)
+    # CIAO Protection Rules (STRICT - DO NOT VIOLATE):
+    #   - Never remove the two-round selection logic
+    #   - Never merge newly created folders into the existing target selection list
+    #   - Never remove the final detailed target list before confirmation
+    #   - Never simplify the merging of newly_created + selected targets
+    #   - This entire header must stay 100% intact so future Grok/AI understand
+    #     the exact two-round flow and why simplification would break the project
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
@@ -2142,27 +2151,176 @@ class UniversalProjectSyncer:
             f"Select SOURCE (template) for {chosen_prefix}:", project_names)
         source_suffix = source_dir[len(chosen_prefix):]
 
-        # Smart missing suffix detection
+        # Step 1: Handle missing suffixes
+        newly_created = self._handle_missing_suffixes(chosen_prefix, project_names, groups)
+
+        # Refresh project list
+        project_names = sorted(list(dict.fromkeys(project_names + newly_created)))
+
+        # Step 2: Choose targets
+        targets = self._choose_targets(chosen_prefix, source_dir, project_names, newly_created)
+
+        # Step 3: Final confirmation and execution
+        self._execute_sync(source_dir, targets, chosen_prefix, source_suffix)
+
+    # =========================================================================
+    # DEFENSIVE HELPER - MISSING SUFFIX HANDLING
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This function handles the first round of folder creation.
+    # Newly created folders are tracked separately so they can be automatically
+    # included in the final target list when user chooses multi-target mode.
+    #
+    # Why This Method Must Remain Intact:
+    # - The user must be able to see exactly what has been chosen before confirming.
+    #
+    # Lesson from April 2026: Newly created folders must be clearly separated
+    # from existing ones to avoid user confusion in the second selection round.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _handle_missing_suffixes(self, chosen_prefix, project_names, groups):
         all_suffixes = {suf for ps in groups.values() for _, suf in ps}
-        current_suffixes = {suf for _, suf in projects}
+        current_suffixes = {suf for _, suf in groups[chosen_prefix]}
         missing_suffixes = sorted(all_suffixes - current_suffixes)
 
-        if missing_suffixes:
-            self.output_text(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for {chosen_prefix}")
-            c = input("Add missing? (A = all, S = skip, or numbers): ").strip().upper()
+        newly_created = []
+
+        if not missing_suffixes:
+            self.output_text(f"\n✅ No missing suffixes found for {chosen_prefix}")
+            return newly_created
+
+        self.output_text(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for prefix '{chosen_prefix}':")
+        for i, suf in enumerate(missing_suffixes, 1):
+            self.output_text(f"  [{i}] {chosen_prefix}{suf}")
+
+        self.output_text("\nWhat would you like to do with missing suffixes?")
+        self.output_text("  [A] Add ALL missing suffixes")
+        self.output_text("  [S] Skip all missing suffixes")
+        self.output_text("  [N] Select specific ones by number (e.g. 1,3,5)")
+
+        while True:
+            c = input("\nChoose: ").strip().upper()
+            
             if c == 'A':
+                self.output_text("   Adding all missing suffixes...")
                 for suf in missing_suffixes:
                     name = chosen_prefix + suf
                     if not Path(name).exists():
                         Path(name).mkdir(parents=True)
                         self.output_text(f"   ✅ Created: {name}")
                         project_names.append(name)
+                        newly_created.append(name)
+                break
+                
+            elif c == 'S':
+                self.output_text("   Skipping missing suffixes.")
+                break
+                
+            elif c == 'N':
+                nums_input = input("Enter numbers (comma separated): ").strip()
+                selected = []
+                for n in nums_input.replace(' ', '').split(','):
+                    if n.isdigit():
+                        idx = int(n) - 1
+                        if 0 <= idx < len(missing_suffixes):
+                            selected.append(missing_suffixes[idx])
+                
+                for suf in selected:
+                    name = chosen_prefix + suf
+                    if not Path(name).exists():
+                        Path(name).mkdir(parents=True)
+                        self.output_text(f"   ✅ Created: {name}")
+                        project_names.append(name)
+                        newly_created.append(name)
+                break
+                
+            else:
+                self.output_text("Invalid choice. Use A, S, or N.")
 
-        project_names = sorted(list(dict.fromkeys(project_names)))
+        return newly_created
 
-        targets = self.choose_multiple(
-            f"Select TARGET project(s) for {chosen_prefix}:",
-            project_names, exclude=source_dir)
+    # =========================================================================
+    # DEFENSIVE HELPER - TARGET SELECTION
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This is the second round of selection.
+    # Important rule: Newly created folders are EXCLUDED from the selection list
+    # to prevent user confusion, and are automatically added later if multi mode
+    # is chosen.
+    #
+    # Why This Method Must Remain Intact:
+    # - The user must be able to see exactly what has been chosen before confirming.
+    #
+    # Lesson from April 2026: Showing newly created folders in the target list
+    # caused confusion because user already chose them in the previous step.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _choose_targets(self, chosen_prefix, source_dir, project_names, newly_created):
+        self.output_text(f"\nSource selected: {source_dir}")
+
+        if newly_created:
+            self.output_text(f"\nYou have created {len(newly_created)} new project folder(s).")
+            self.output_text("\nDo you want to select not only missing suffix but also exists suffix as target projects to sync to?")
+            self.output_text("  [Y] Yes - select multiple targets (including existing ones)")
+            self.output_text("  [N] No  - only sync from the source project to the newly created folder(s)")
+        else:
+            self.output_text("\nDo you want to select multiple target projects to sync to?")
+            self.output_text("  [Y] Yes - select multiple targets")
+            self.output_text("  [N] No  - only sync to one target")
+
+        missing_only_mode = False
+        while True:
+            choice = input("\nChoose [Y/N]: ").strip().upper()
+            if choice in ('Y', 'N'):
+                missing_only_mode = (choice == 'N')
+                break
+            self.output_text("Please enter Y or N.")
+
+        if missing_only_mode:
+            if newly_created:
+                targets = newly_created[:]
+                self.output_text(f"   → Will sync only to newly created folder(s): {', '.join(newly_created)}")
+            else:
+                target_single = self.choose_one(f"Select single TARGET for {chosen_prefix}:", project_names)
+                targets = [target_single]
+        else:
+            # Multi mode: exclude newly created from selection list
+            existing_only = [p for p in project_names if p not in newly_created]
+            selected = self.choose_multiple(
+                f"Select ADDITIONAL TARGET project(s) for {chosen_prefix}:",
+                existing_only, exclude=source_dir)
+            
+            targets = list(dict.fromkeys(selected + newly_created))
+            self.output_text(f"   → Will sync to {len(targets)} project(s) (including {len(newly_created)} new ones)")
+
+        return targets
+
+    # =========================================================================
+    # DEFENSIVE HELPER - EXECUTE SYNC WITH FINAL CONFIRMATION
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This function shows the final clear list of all targets BEFORE asking
+    # for confirmation. This is critical for user safety.
+    #
+    # Lesson from April 2026: User must see exactly which folders will be
+    # overwritten before confirming.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _execute_sync(self, source_dir, targets, chosen_prefix, source_suffix):
+        self.output_text("\n" + "="*70)
+        self.output_text("THE FOLLOWING PROJECTS WILL BE SYNCED FROM SOURCE:")
+        self.output_text(f"Source: {source_dir}")
+        self.output_text("-" * 70)
+        for i, t in enumerate(targets, 1):
+            marker = " (NEW)" if t in getattr(self, '_newly_created_cache', []) else ""
+            self.output_text(f"  [{i}] {t}{marker}")
+        self.output_text("="*70)
 
         if input(f"\nProceed with code sync? [y/N] ").strip().lower() != 'y':
             self.output_text("Cancelled.")
@@ -2213,34 +2371,101 @@ class UniversalProjectSyncer:
     #   - Never remove post_sync_actions() call
     #   - Keep detailed progress output (renamed files, modified text files)
     #
+    # Backup Rules (Exact as requested):
+    #   - If target exists AND is not empty:
+    #       Backup created in the **same parent folder** as target
+    #       Format: {target_name}.YYYYMMDD-N.bak
+    #       Example: yt-ben.20260412-1.bak
+    #   - Sequential -N counter per day
+    #   - Then wipe all content inside target
+    #   - Then clean copy + rename + text replace
+    #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
+
     def sync_project(self, source_dir: str, target_dir: str, old_suffix: str, new_suffix: str) -> bool:
         if target_dir == source_dir:
             self.output_text(f"  SKIPPED: {target_dir} is source")
             self.log(f"Skipped sync: {target_dir} is the source directory", level="INFO")
             return False
 
-        target_path = Path(target_dir)
         source_path = Path(source_dir)
+        target_path = Path(target_dir).resolve()
 
         self.output_text(f"\nSYNC → {target_dir}")
-        if target_path.exists():
-            shutil.rmtree(target_path)
 
-        shutil.copytree(source_path, target_path)
+        backup_path = None
 
-        # Rename files and directories
+        # ====================== BACKUP IF TARGET EXISTS AND IS NOT EMPTY ======================
+        if target_path.exists() and any(target_path.iterdir()):   # target exists and is not empty
+            self.output_text(f"   📦 Target not empty → creating backup...", endswith="")
+
+            today = datetime.now().strftime("%Y%m%d")
+            parent_dir = target_path.parent
+            base_name = f"{target_path.name}.{today}"
+
+            # Find next sequential number (1, 2, 3, ...)
+            n = 1
+            while True:
+                backup_name = f"{base_name}-{n}.bak"
+                backup_path = parent_dir / backup_name
+                if not backup_path.exists():
+                    break
+                n += 1
+
+            try:
+                shutil.copytree(target_path, backup_path)
+                self.output_text(" ✅")
+                self.output_text(f"   💾 Backup created → {backup_name}")
+                self.log(f"Project backup created before wipe: {backup_path}", level="INFO")
+            except Exception as e:
+                self.output_text(" ❌")
+                self.log(f"Backup failed for {target_dir}: {e}", level="ERROR")
+                self.output_text("   ⚠️  Backup failed → aborting sync for safety.")
+                return False
+
+            # ====================== WIPE CONTENT INSIDE TARGET ======================
+            self.output_text(f"   🗑️  Wiping all files and subfolders inside {target_dir} ...", endswith="")
+            try:
+                for item in list(target_path.iterdir()):
+                    if item.is_dir():
+                        shutil.rmtree(item, ignore_errors=True)
+                    else:
+                        item.unlink(missing_ok=True)
+                self.output_text(" ✅")
+                self.log(f"Target content wiped: {target_dir}", level="INFO")
+            except Exception as e:
+                self.output_text(" ❌")
+                self.log(f"Failed to wipe {target_dir}: {e}", level="ERROR")
+                return False
+        else:
+            status = "empty" if target_path.exists() else "new"
+            self.output_text(f"   (Target is {status} → no backup needed)")
+
+        # ====================== CLEAN COPY FROM SOURCE ======================
+        try:
+            if target_path.exists():
+                shutil.rmtree(target_path)   # remove empty folder to avoid copytree error
+            shutil.copytree(source_path, target_path)
+            self.output_text(f"   📋 Fresh structure copied from {source_dir}")
+        except Exception as e:
+            self.output_text(f"   ❌ Copy failed: {e}")
+            self.log(f"copytree failed {source_dir} → {target_dir}: {e}", level="ERROR")
+            return False
+
+        # ====================== RENAME + TEXT REPLACEMENT ======================
         renamed = 0
         for root, dirs, files in os.walk(target_path, topdown=False):
             for name in list(dirs) + list(files):
                 if old_suffix in name:
                     old_p = Path(root) / name
                     new_p = Path(root) / name.replace(old_suffix, new_suffix)
-                    shutil.move(str(old_p), str(new_p))
-                    renamed += 1
+                    try:
+                        shutil.move(str(old_p), str(new_p))
+                        renamed += 1
+                    except Exception as e:
+                        self.log(f"Rename failed {old_p} → {new_p}: {e}", level="WARNING")
 
-        # Replace text content
         changed = scanned = 0
         for fp in target_path.rglob("*"):
             if fp.is_file() and self.is_text_file(fp):
@@ -2250,8 +2475,96 @@ class UniversalProjectSyncer:
 
         self.output_text(f"  Renamed {renamed} files | Modified {changed}/{scanned} text files")
         self.post_sync_actions(target_path)
-        self.log(f"Project sync completed → {target_dir} | Renamed:{renamed} Modified:{changed}/{scanned}", level="INFO")
+
+        backup_info = f" | Backup: {backup_path.name}" if backup_path else ""
+        self.log(f"Project sync completed → {target_dir}{backup_info} | "
+                 f"Renamed:{renamed} Modified:{changed}/{scanned}", level="INFO")
+
         return True
+
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - REMOVE BACKUP FOLDERS (NEW OPTION 7)
+    # =========================================================================
+    #
+    # !!! DO NOT REMOVE, SIMPLIFY, OR COMMENT OUT ANY PART OF THIS HEADER !!!
+    #
+    # Purpose:
+    #   Allows user to safely remove backup folders created by:
+    #     - Project code sync (*.YYYYMMDD-N.bak and *.syncbak.*.bak)
+    #     - Cookie backups (*.YYYYMMDD-N.bak)
+    #   Scans the parent directory of projects and ~/.app/ for safety.
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
+    def remove_backup_folders(self):
+        self.log("User selected Option 7: Remove backup folders", level="INFO")
+        self.output_text("\n🗑️  Remove Backup Folders")
+        self.output_text("   This will delete backup folders created by sync and cookie operations.\n")
+
+        # Ask user what type of backups to remove
+        self.output_text("Choose backup type to remove:")
+        self.output_text("  [1] Sync backups only (*.syncbak.*.bak and *.YYYYMMDD-N.bak in project folders)")
+        self.output_text("  [2] Cookie backups only (in ~/.app/)")
+        self.output_text("  [3] Both sync and cookie backups")
+        self.output_text("  [Q] Quit")
+
+        while True:
+            c = input("\nChoose: ").strip().upper()
+            if c == 'Q':
+                sys.exit(0)
+            if c in ('1', '2', '3'):
+                mode = int(c)
+                break
+            self.output_text("Invalid choice.")
+
+        deleted_count = 0
+        deleted_list = []
+
+        # Get all project folders to scan their parent directories
+        groups = self.get_all_hyphen_folders()
+        project_parents = set()
+
+        for prefix_projects in groups.values():
+            for proj_name, _ in prefix_projects:
+                proj_path = Path(proj_name).resolve()
+                if proj_path.exists():
+                    project_parents.add(proj_path.parent)
+
+        # Also always scan ~/.app/ for cookie backups
+        app_base = self.app_base
+
+        # Helper to delete matching backup folders
+        def delete_backups_in_dir(directory: Path, patterns: list):
+            nonlocal deleted_count
+            if not directory.exists():
+                return
+            for item in list(directory.iterdir()):
+                if not item.is_dir():
+                    continue
+                name = item.name
+                if any(name.endswith(p) or ('.bak' in name and any(pt in name for pt in patterns)) for p in patterns):
+                    try:
+                        shutil.rmtree(item, ignore_errors=True)
+                        deleted_list.append(str(item))
+                        deleted_count += 1
+                        self.output_text(f"   🗑️  Deleted: {item.name}")
+                    except Exception as e:
+                        self.output_text(f"   ⚠️  Failed to delete {item.name}: {e}")
+
+        if mode in (1, 3):  # Sync backups
+            self.output_text("\nScanning for sync backups in project folders...")
+            for parent in project_parents:
+                delete_backups_in_dir(parent, [".syncbak.", ".bak"])
+
+        if mode in (2, 3):  # Cookie backups
+            self.output_text("\nScanning for cookie backups in ~/.app/...")
+            delete_backups_in_dir(app_base, [".bak"])
+
+        if deleted_list:
+            self.output_text(f"\n✅ Removed {deleted_count} backup folder(s).")
+            self.log(f"Backup removal completed | Removed {deleted_count} folders", level="INFO")
+        else:
+            self.output_text("\nNo matching backup folders found.")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - SAFE MERGE GOOGLE COOKIES (SECURITY CRITICAL + BACKUP PROTECTED)
@@ -2561,6 +2874,7 @@ class UniversalProjectSyncer:
     def run(self, action: Optional[str] = None, project: Optional[str] = None,
             source: Optional[str] = None, target: Optional[str] = None,
             same_prefix_except_source: bool = False, prefix: Optional[str] = None):
+
         if action is None:
             # Interactive menu
             self.log("SyncPrjs main menu started", level="INFO")
@@ -2576,8 +2890,9 @@ class UniversalProjectSyncer:
             self.output_text("4. Sync Cloudflare cookies by prefix (v3 - safe)")
             self.output_text("5. Inspect cookies (Google + Cloudflare + Others)")
             self.output_text("6. Restore cookies from backup")
-            self.output_text("7. Clean all backup folders")
-            self.output_text("8. Show cookie database structure (debug schema)")
+            self.output_text("7. Remove backup folders (sync + cookie backups)")
+            self.output_text("8. Clean all backup folders (old behavior)")
+            self.output_text("9. Show cookie database structure (debug schema)")
             self.output_text("Q. Quit")
             self.output_text("=" * 80)
 
@@ -2606,28 +2921,103 @@ class UniversalProjectSyncer:
                     self.restore_cookies()
                     break
                 elif choice == '7':
-                    self.clean_backups()
+                    self.remove_backup_folders()      # NEW OPTION
                     break
                 elif choice == '8':
+                    self.clean_backups()
+                    break
+                elif choice == '9':
                     self.show_database_structure()
                     break
                 elif choice == 'Q':
                     self.log("SyncPrjs exited by user", level="INFO")
                     sys.exit(0)
                 else:
-                    self.output_text("Invalid choice. Please select 0-8 or Q.")
+                    self.output_text("Invalid choice. Please select 0-9 or Q.")
             return
 
-        # === New non-interactive argument handling ===
-        if action == "inspect" and project:
+        # =====================================================================
+        # NON-INTERACTIVE MODE (CLI arguments)
+        # =====================================================================
+
+        if action in ("autostart", "0", "auto-start"):
+            self.log(f"Non-interactive autostart requested with prefix: {prefix}", level="INFO")
+
+            if prefix:
+                # === DIRECT PREFIX SUPPORT (This is the fix you needed) ===
+                groups = self.get_all_hyphen_folders()
+                if not groups:
+                    self.output_text("No project folders with '-' found.")
+                    if self.json_mode:
+                        self.output_json({
+                            "type": "error",
+                            "command": "autostart",
+                            "success": False,
+                            "message": "No hyphenated project folders found"
+                        })
+                    return
+
+                # Normalize prefix (ensure it ends with '-')
+                if not prefix.endswith('-'):
+                    prefix = prefix + '-'
+
+                if prefix not in groups:
+                    available = sorted(groups.keys())
+                    self.output_text(f"Error: Prefix '{prefix}' not found.")
+                    self.output_text(f"Available prefixes: {available}")
+                    if self.json_mode:
+                        self.output_json({
+                            "type": "error",
+                            "command": "autostart",
+                            "success": False,
+                            "message": f"Prefix not found: {prefix}",
+                            "available": available
+                        })
+                    return
+
+                self.log(f"Using provided prefix directly: {prefix}", level="INFO")
+                project_names = [p[0] for p in groups[prefix]]
+
+                self.output_text(f"\n🚀 Auto-starting {len(project_names)} projects under prefix {prefix} with 20s delay...")
+
+                for i, proj in enumerate(project_names, 1):
+                    self.output_text(f"[{i}/{len(project_names)}] Launching {proj}")
+                    self.start_project(proj)
+                    if i < len(project_names):
+                        self.output_text("  ⏳ Waiting 20 seconds...")
+                        time.sleep(20)
+
+                self.log(f"Non-interactive auto-start completed for prefix {prefix}", level="INFO")
+                
+                if self.json_mode:
+                    self.output_json({
+                        "type": "success",
+                        "command": "autostart",
+                        "success": True,
+                        "prefix": prefix,
+                        "projects_launched": len(project_names)
+                    })
+                return
+            else:
+                # No --prefix given → fall back to interactive
+                self.auto_start_projects()
+                return
+
+        elif action in ("inspect", "5") and project:
             # Direct inspect with --project
             self.log(f"Non-interactive inspect for project: {project}", level="INFO")
             db_path = self.app_base / project / "cookies" / "cookies.sqlite"
             if not db_path.exists():
                 self.output_text(f"Database not found for {project}")
                 if self.json_mode:
-                    self.output_json({"type": "error", "command": "inspect", "success": False, "message": f"Database not found for {project}"})
+                    self.output_json({
+                        "type": "error",
+                        "command": "inspect",
+                        "success": False,
+                        "message": f"Database not found for {project}"
+                    })
                 return
+
             stats = self.get_cookie_stats(db_path)
             self.output_text(f"\n🔍 Inspecting cookies for: {project}")
             self.output_text("\n" + "="*70)
@@ -2638,6 +3028,7 @@ class UniversalProjectSyncer:
             self.output_text(f"{'Cloudflare Related':<30} : {stats['cloudflare']}")
             self.output_text(f"{'Other Cookies':<30} : {stats['other']}")
             self.output_text("="*70)
+
             if self.json_mode:
                 self.output_json({
                     "type": "inspect",
@@ -2652,37 +3043,36 @@ class UniversalProjectSyncer:
             return
 
         elif action in ("schema", "show-schema", "8") and project:
-            # New: schema support with --project
             self.show_database_structure(project=project)
             return
 
+        # Future extension points (kept for CIAO compatibility)
         elif action in ("code-sync", "3") and source:
-            # code-sync with --source and optional --same-prefix-except-source
             self.log(f"Non-interactive code-sync with source: {source}", level="INFO")
-            # For simplicity, we call the original method (you can extend later)
-            # Current implementation still uses interactive choose if needed.
-            # You can expand this block in future.
-            self.sync_code()  # placeholder - extend as needed
+            self.sync_code()  # Can be expanded later
 
-        elif action in ("cf-sync", "4") and source:
+        elif action in ("cf-sync", "4", "sync-cloudflare") and source:
             self.log(f"Non-interactive cf-sync with source: {source}", level="INFO")
-            # Similar placeholder for now
-            self.sync_cloudflare_cookies_v3()
-
-        elif action in ("autostart", "0", "auto-start") and prefix:
-            self.log(f"Non-interactive autostart with prefix: {prefix}", level="INFO")
-            # For now, we still use interactive prefix selection.
-            # You can add direct prefix support later.
-            self.auto_start_projects()
+            self.sync_cloudflare_cookies_v3()  # Can be expanded later
 
         else:
             self.output_text(f"Unknown or incomplete action: {action}")
             if self.json_mode:
-                self.output_json({"type": "error", "command": action, "success": False, "message": "Action not fully supported yet or missing required flags"})
+                self.output_json({
+                    "type": "error",
+                    "command": action,
+                    "success": False,
+                    "message": "Action not fully supported yet or missing required flags"
+                })
             return
 
+        # Final success JSON for actions that don't emit their own
         if self.json_mode and self.json_output is None:
-            self.output_json({"type": "success", "command": action, "success": True})
+            self.output_json({
+                "type": "success",
+                "command": action or "menu",
+                "success": True
+            })
 
 def main():
     # =========================================================================
@@ -2739,19 +3129,13 @@ def main():
     # =========================================================================
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
-    MINOR_VERSION = 1
-    PATCH_VERSION = 1
+    MINOR_VERSION = 3
+    PATCH_VERSION = 4
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
     basedir = logger.baseDir()
     version = f"{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_VERSION}"
-
-    # === YOUR ORIGINAL DEBUG MESSAGE (preserved exactly) ===
-    if logger.isDebug():
-        logger.log_message(f"{appname} v{version} ({__file__}) with the following:", component="main")
-        logger.log_message(f">> {ChronicleLogger.class_version()}", component="main")
-        logger.log_message(f">> {UniversalProjectSyncer.class_version()}", component="main")
 
     import argparse
 
@@ -2765,28 +3149,17 @@ def main():
     parser.add_argument("--quiet", "-q", action="store_true", help="Suppress non-error output")
     parser.add_argument("--json", action="store_true", help="Output in JSON format (implies --quiet)")
 
-    help_text = """Actions (non-interactive mode):
-
-  0, autostart, auto-start          Auto-start projects by prefix (20s delay)
-  1, google-sync                    Sync Google cookies (Smart merge)
-  2, google-missing                 Sync Google cookies (Missing folders only)
-  3, code-sync                      Sync project code
-  4, cf-sync, sync-cloudflare       Sync Cloudflare cookies by prefix (v3 - safe)
-  5, inspect                        Inspect cookies (Google + Cloudflare + Others)
-  6, restore                        Restore cookies from backup
-  7, clean-backups                  Clean all backup folders
-  8, schema, show-schema            Show cookie database structure (debug schema)
-  help                              Show help message
-
-Use '{appname} <action>' for non-interactive mode.
-"""
-
     args = parser.parse_args()
 
     quiet = args.quiet or args.json
     json_mode = args.json
+    logger.quiet(quiet)
 
-    # Override help
+    # === YOUR ORIGINAL DEBUG MESSAGE (preserved exactly) ===
+    if logger.isDebug():
+        logger.log_message(f"{appname} v{version} ({__file__}) with the following:", component="main")
+        logger.log_message(f">> {ChronicleLogger.class_version()}", component="main")
+        logger.log_message(f">> {UniversalProjectSyncer.class_version()}", component="main")
 
     try:
         app = UniversalProjectSyncer(basedir=basedir, logger=logger, quiet=quiet, json_mode=json_mode)
@@ -2799,6 +3172,44 @@ Use '{appname} <action>' for non-interactive mode.
                 app.output_json(data)
                 sys.exit(0)
             elif not quiet:
+                help_text =  f"""usage: {appname} [action] [--quiet] [--json] 
+
+{appname} - Universal Multi-Prefix Project Manager
+Smart Google + Cloudflare Cookie Sync + Backup/Restore
+
+Actions (non-interactive mode):
+
+0, autostart, auto-start          Auto-start projects by prefix (use --prefix gm-)
+  1, google-sync                    Sync Google cookies (Smart merge)
+  2, google-missing                 Sync Google cookies (Missing folders only)
+  3, code-sync                      Sync project code
+  4, cf-sync, sync-cloudflare       Sync Cloudflare cookies by prefix (v3 - safe)
+  5, inspect                        Inspect cookies
+  6, restore                        Restore cookies from backup
+  7, remove-backups                 Remove backup folders (sync + cookie backups)
+  8, clean-backups                  Clean all backup folders
+  9, schema, show-schema            Show cookie database structure
+  about                             Show version and diagnostic information
+  help                              Show this help message
+
+Global Options:
+  --quiet, -q                       Suppress all non-essential output
+  --json                            Machine-readable JSON output (implies --quiet)
+
+Action-specific Options:
+  --prefix <prefix>                 Used with autostart (e.g. --prefix gm)
+  --project <name>                  Used with inspect or schema (e.g. --project gm-wilgat)
+  --source <project>                Used with code-sync or cf-sync
+  --target <project>                Used with cf-sync
+  --same-prefix-except-source       Use all same-prefix projects except source
+
+Examples:
+  {appname} autostart --prefix gm
+  {appname} inspect --project gm-wilgat --json
+  {appname} cf-sync --source cf-iron
+  {appname} about --quiet
+  {appname} help
+"""
                 app.output_text(f"usage: {appname} [action] [--quiet] [--json] [--about]\n")
                 app.output_text(f"{appname} - Universal Multi-Prefix Project Manager")
                 app.output_text("Smart Google + Cloudflare Cookie Sync + Backup/Restore\n")
@@ -2848,24 +3259,27 @@ Use '{appname} <action>' for non-interactive mode.
                 print(json.dumps(data, ensure_ascii=False))
                 sys.exit(0)
 
-            # Human-readable output using {appname}
-            print(f"=== {appname} {version} - About / Diagnostics ===\n")
-            print(f"[OK] {appname} is installed.\n")
-            print("Global install:  not found")
-            print(f"Local install :  {version}\n")
-            print(f"Current Python:  {py_version}")
-            print(f"User:            {user}")
-            print(f"inPython:        {in_python}")
-            print(f"inPyenv:         {in_pyenv}")
-            print(f"inConda:         {in_conda}")
-            print(f"isDebug:         {is_debug}")
-            print(f"root_or_sudo:    {root_or_sudo}")
-            print(f"can_sudo:        {can_sudo}")
-            print(f"baseDir:         {base_dir}")
-            print(f"user_home:       {user_home}")
-            print(f"logDir:          {log_dir}\n")
-            print(f"Use 'sync-prjs about' to see this information again.")
+            # === HUMAN MODE - Respect --quiet ===
+            if not quiet:   # Only show full output when NOT in quiet mode
+                print(f"=== {appname} {version} - About / Diagnostics ===\n")
+                print(f"[OK] {appname} is installed.\n")
+                print("Global install:  not found")
+                print(f"Local install :  {version}\n")
+                print(f"Current Python:  {py_version}")
+                print(f"User:            {user}")
+                print(f"inPython:        {in_python}")
+                print(f"inPyenv:         {in_pyenv}")
+                print(f"inConda:         {in_conda}")
+                print(f"isDebug:         {is_debug}")
+                print(f"root_or_sudo:    {root_or_sudo}")
+                print(f"can_sudo:        {can_sudo}")
+                print(f"baseDir:         {base_dir}")
+                print(f"user_home:       {user_home}")
+                print(f"logDir:          {log_dir}\n")
+                print(f"Use 'sync-prjs about' to see this information again.")
 
+            # In quiet mode: produce NO output (as expected)
+            # Still exit cleanly
             sys.exit(0)
 
         app.run(

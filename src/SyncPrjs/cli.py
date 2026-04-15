@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.3.3
+# Version 1.3.4
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -250,10 +250,10 @@
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.3.3",
+#      "version": "1.3.4",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.3.3",
+#      "local_version": "1.3.4",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -370,7 +370,7 @@ class UniversalProjectSyncer:
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
     MINOR_VERSION = 3
-    PATCH_VERSION = 3
+    PATCH_VERSION = 4
 
     @staticmethod
     def class_version():
@@ -858,42 +858,43 @@ class UniversalProjectSyncer:
             if not self.json_mode:
                 print(f"[{level}] {message}")
 
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - GET ALL HYPHEN FOLDERS HELPER (CORE)
+    # =========================================================================
+    #
+    # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY THIS METHOD !!!
+    # !!! THIS IS THE FOUNDATIONAL PROJECT DETECTION LOGIC !!!
+    #
+    # Purpose:
+    #   Scans the current directory and groups all folders that follow the
+    #   prefix-suffix naming pattern (e.g. grok-xxx, gm-yyy, poe-zzz).
+    #
+    # CRITICAL RULES (MUST BE RESPECTED FOREVER):
+    #   - Exclude backup folders ending with .bak
+    #   - Exclude suspended folders ending with .suspended
+    #   - Split on the FIRST '-' only using split('-', 1)
+    #   - Build prefix as "xxx-" for reliable grouping
+    #   - Always sort each group by suffix
+    #
+    # Lessons learned from April 2026 debugging:
+    #   - .bak and .suspended folders must never appear in any selection list
+    #   - Failing to filter them caused confusion in missing suffix and target selection
+    #
+    # CIAO Protection Rules:
+    #   - Never remove the .bak / .suspended filter
+    #   - Never change split('-', 1) logic
+    #   - Never remove the sorting step
+    #   - This header must remain fully intact so future Grok/AI understand
+    #     why these filters exist
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
     def get_all_hyphen_folders(self) -> Dict[str, List[Tuple[str, str]]]:
-        # =========================================================================
-        # CIAO DEFENSIVE CODING STYLE - GET ALL HYPHEN FOLDERS HELPER (CORE)
-        # =========================================================================
-        #
-        # !!! DO NOT REMOVE, SIMPLIFY, OR MODIFY THIS METHOD !!!
-        # !!! THIS IS THE FOUNDATIONAL PROJECT DETECTION LOGIC !!!
-        #
-        # Purpose:
-        #   Scans the current directory and groups all folders that follow the
-        #   prefix-suffix naming pattern (e.g. grok-xxx, gm-yyy, poe-zzz).
-        #   Returns a dictionary keyed by prefix (including trailing '-') with
-        #   sorted lists of (full_name, suffix) tuples.
-        #
-        # Critical Responsibilities (Protected):
-        #   - Correctly splits on the FIRST '-' only using split('-', 1)
-        #   - Builds prefix as "xxx-" to enable reliable grouping
-        #   - Sorts each group by suffix for consistent user selection
-        #   - Used by auto_start_projects(), sync_code(), inspect_cookies(), etc.
-        #
-        # Why This Method Must Remain Intact:
-        #   - Almost every major feature depends on accurate prefix-suffix detection
-        #   - Changing the split logic or sorting would break menu choices and batch operations
-        #   - Previous AI "cleanups" destroyed the grouping behavior, causing wrong project selection
-        #
-        # CIAO Protection Rules:
-        #   - Never change split('-', 1) to split('-') or any other variant
-        #   - Never remove the sorting step (groups[prefix].sort(...))
-        #   - Never simplify the return type or structure
-        #   - Keep this header fully intact for future security/operational audits
-        #
-        # Last aligned with CIAO defensive style: April 2026
-        # =========================================================================
         groups: Dict[str, List[Tuple[str, str]]] = {}
         for p in Path(".").iterdir():
             if p.is_dir() and '-' in p.name:
+                if p.name.endswith('.bak') or p.name.endswith('.suspended'):
+                    continue
                 parts = p.name.split('-', 1)
                 if len(parts) == 2:
                     prefix, suffix = parts[0] + '-', parts[1]
@@ -1712,11 +1713,11 @@ class UniversalProjectSyncer:
         self.output_text(f"\n🎉 Done! Successfully synced {success}/{actions} projects.")
         self.log(f"Google cookie sync completed | Success: {success}/{actions} | Mode: {mode}", level="INFO")
 
-    # ====================== CODE SYNC (Original) ======================
-
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - SYNC CODE METHOD (CRITICAL)
     # =========================================================================
+    #
+    # sync_code
     #
     # !!! DO NOT REMOVE, SIMPLIFY, SHORTEN, OR COMMENT OUT ANY PART OF THIS HEADER !!!
     # !!! DO NOT CONVERT TO PLACEHOLDER OR REMOVE REAL LOGIC !!!
@@ -1727,12 +1728,18 @@ class UniversalProjectSyncer:
     #   project to one or more target projects, including automatic renaming of
     #   suffixes in filenames and inside text files.
     #
-    # Critical Features (Protected):
-    #   - Full interactive selection of source and multiple targets
-    #   - Smart detection and optional creation of missing suffixes
-    #   - File tree copy + suffix renaming in both filenames and content
-    #   - Post-sync actions (ant build, .git cleanup)
-    #   - Confirmation step before destructive operations
+    # CRITICAL LESSONS LEARNED FROM APRIL 2026 DEBUGGING (MUST BE RESPECTED FOREVER):
+    #   1. There are EXACTLY TWO DISTINCT ROUNDS of folder selection:
+    #      - Round 1: missing suffix detection and creation (new folders)
+    #      - Round 2: target selection (existing folders)
+    #   2. The final sync operation MUST merge choices from BOTH rounds.
+    #   3. Newly created folders are automatically included when user chooses
+    #      multi-target mode ([Y]), but must be EXCLUDED from the second-round
+    #      selection list to prevent user confusion.
+    #   4. Syncing the source folder to itself is meaningless and was a past
+    #      bug that must never be re-introduced.
+    #   5. Before the final "Proceed with code sync?" question, the code MUST
+    #      explicitly list ALL targets that will be synced (with (NEW) marker).
     #
     # Why This Method Must Remain Intact:
     #   - Directly responsible for maintaining consistency across dozens of
@@ -1741,11 +1748,13 @@ class UniversalProjectSyncer:
     #   - Any "cleaning" by AI previously broke the missing-suffix handling
     #   - Must preserve user safety (confirmation + detailed progress)
     #
-    # CIAO Protection Rules:
-    #   - Never remove missing suffix detection/creation block
-    #   - Never simplify choose_multiple or post_sync_actions calls
-    #   - Never remove the final confirmation prompt
-    #   - Keep full statistics output (renamed files, modified text files)
+    # CIAO Protection Rules (STRICT - DO NOT VIOLATE):
+    #   - Never remove the two-round selection logic
+    #   - Never merge newly created folders into the existing target selection list
+    #   - Never remove the final detailed target list before confirmation
+    #   - Never simplify the merging of newly_created + selected targets
+    #   - This entire header must stay 100% intact so future Grok/AI understand
+    #     the exact two-round flow and why simplification would break the project
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
@@ -1770,27 +1779,176 @@ class UniversalProjectSyncer:
             f"Select SOURCE (template) for {chosen_prefix}:", project_names)
         source_suffix = source_dir[len(chosen_prefix):]
 
-        # Smart missing suffix detection
+        # Step 1: Handle missing suffixes
+        newly_created = self._handle_missing_suffixes(chosen_prefix, project_names, groups)
+
+        # Refresh project list
+        project_names = sorted(list(dict.fromkeys(project_names + newly_created)))
+
+        # Step 2: Choose targets
+        targets = self._choose_targets(chosen_prefix, source_dir, project_names, newly_created)
+
+        # Step 3: Final confirmation and execution
+        self._execute_sync(source_dir, targets, chosen_prefix, source_suffix)
+
+    # =========================================================================
+    # DEFENSIVE HELPER - MISSING SUFFIX HANDLING
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This function handles the first round of folder creation.
+    # Newly created folders are tracked separately so they can be automatically
+    # included in the final target list when user chooses multi-target mode.
+    #
+    # Why This Method Must Remain Intact:
+    # - The user must be able to see exactly what has been chosen before confirming.
+    #
+    # Lesson from April 2026: Newly created folders must be clearly separated
+    # from existing ones to avoid user confusion in the second selection round.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _handle_missing_suffixes(self, chosen_prefix, project_names, groups):
         all_suffixes = {suf for ps in groups.values() for _, suf in ps}
-        current_suffixes = {suf for _, suf in projects}
+        current_suffixes = {suf for _, suf in groups[chosen_prefix]}
         missing_suffixes = sorted(all_suffixes - current_suffixes)
 
-        if missing_suffixes:
-            self.output_text(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for {chosen_prefix}")
-            c = input("Add missing? (A = all, S = skip, or numbers): ").strip().upper()
+        newly_created = []
+
+        if not missing_suffixes:
+            self.output_text(f"\n✅ No missing suffixes found for {chosen_prefix}")
+            return newly_created
+
+        self.output_text(f"\n🔍 Found {len(missing_suffixes)} missing suffixes for prefix '{chosen_prefix}':")
+        for i, suf in enumerate(missing_suffixes, 1):
+            self.output_text(f"  [{i}] {chosen_prefix}{suf}")
+
+        self.output_text("\nWhat would you like to do with missing suffixes?")
+        self.output_text("  [A] Add ALL missing suffixes")
+        self.output_text("  [S] Skip all missing suffixes")
+        self.output_text("  [N] Select specific ones by number (e.g. 1,3,5)")
+
+        while True:
+            c = input("\nChoose: ").strip().upper()
+            
             if c == 'A':
+                self.output_text("   Adding all missing suffixes...")
                 for suf in missing_suffixes:
                     name = chosen_prefix + suf
                     if not Path(name).exists():
                         Path(name).mkdir(parents=True)
                         self.output_text(f"   ✅ Created: {name}")
                         project_names.append(name)
+                        newly_created.append(name)
+                break
+                
+            elif c == 'S':
+                self.output_text("   Skipping missing suffixes.")
+                break
+                
+            elif c == 'N':
+                nums_input = input("Enter numbers (comma separated): ").strip()
+                selected = []
+                for n in nums_input.replace(' ', '').split(','):
+                    if n.isdigit():
+                        idx = int(n) - 1
+                        if 0 <= idx < len(missing_suffixes):
+                            selected.append(missing_suffixes[idx])
+                
+                for suf in selected:
+                    name = chosen_prefix + suf
+                    if not Path(name).exists():
+                        Path(name).mkdir(parents=True)
+                        self.output_text(f"   ✅ Created: {name}")
+                        project_names.append(name)
+                        newly_created.append(name)
+                break
+                
+            else:
+                self.output_text("Invalid choice. Use A, S, or N.")
 
-        project_names = sorted(list(dict.fromkeys(project_names)))
+        return newly_created
 
-        targets = self.choose_multiple(
-            f"Select TARGET project(s) for {chosen_prefix}:",
-            project_names, exclude=source_dir)
+    # =========================================================================
+    # DEFENSIVE HELPER - TARGET SELECTION
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This is the second round of selection.
+    # Important rule: Newly created folders are EXCLUDED from the selection list
+    # to prevent user confusion, and are automatically added later if multi mode
+    # is chosen.
+    #
+    # Why This Method Must Remain Intact:
+    # - The user must be able to see exactly what has been chosen before confirming.
+    #
+    # Lesson from April 2026: Showing newly created folders in the target list
+    # caused confusion because user already chose them in the previous step.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _choose_targets(self, chosen_prefix, source_dir, project_names, newly_created):
+        self.output_text(f"\nSource selected: {source_dir}")
+
+        if newly_created:
+            self.output_text(f"\nYou have created {len(newly_created)} new project folder(s).")
+            self.output_text("\nDo you want to select not only missing suffix but also exists suffix as target projects to sync to?")
+            self.output_text("  [Y] Yes - select multiple targets (including existing ones)")
+            self.output_text("  [N] No  - only sync from the source project to the newly created folder(s)")
+        else:
+            self.output_text("\nDo you want to select multiple target projects to sync to?")
+            self.output_text("  [Y] Yes - select multiple targets")
+            self.output_text("  [N] No  - only sync to one target")
+
+        missing_only_mode = False
+        while True:
+            choice = input("\nChoose [Y/N]: ").strip().upper()
+            if choice in ('Y', 'N'):
+                missing_only_mode = (choice == 'N')
+                break
+            self.output_text("Please enter Y or N.")
+
+        if missing_only_mode:
+            if newly_created:
+                targets = newly_created[:]
+                self.output_text(f"   → Will sync only to newly created folder(s): {', '.join(newly_created)}")
+            else:
+                target_single = self.choose_one(f"Select single TARGET for {chosen_prefix}:", project_names)
+                targets = [target_single]
+        else:
+            # Multi mode: exclude newly created from selection list
+            existing_only = [p for p in project_names if p not in newly_created]
+            selected = self.choose_multiple(
+                f"Select ADDITIONAL TARGET project(s) for {chosen_prefix}:",
+                existing_only, exclude=source_dir)
+            
+            targets = list(dict.fromkeys(selected + newly_created))
+            self.output_text(f"   → Will sync to {len(targets)} project(s) (including {len(newly_created)} new ones)")
+
+        return targets
+
+    # =========================================================================
+    # DEFENSIVE HELPER - EXECUTE SYNC WITH FINAL CONFIRMATION
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY OR REMOVE THIS FUNCTION !!!
+    # This function shows the final clear list of all targets BEFORE asking
+    # for confirmation. This is critical for user safety.
+    #
+    # Lesson from April 2026: User must see exactly which folders will be
+    # overwritten before confirming.
+    #
+    # Last aligned: April 2026
+    # =========================================================================
+    def _execute_sync(self, source_dir, targets, chosen_prefix, source_suffix):
+        self.output_text("\n" + "="*70)
+        self.output_text("THE FOLLOWING PROJECTS WILL BE SYNCED FROM SOURCE:")
+        self.output_text(f"Source: {source_dir}")
+        self.output_text("-" * 70)
+        for i, t in enumerate(targets, 1):
+            marker = " (NEW)" if t in getattr(self, '_newly_created_cache', []) else ""
+            self.output_text(f"  [{i}] {t}{marker}")
+        self.output_text("="*70)
 
         if input(f"\nProceed with code sync? [y/N] ").strip().lower() != 'y':
             self.output_text("Cancelled.")
@@ -2600,7 +2758,7 @@ def main():
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
     MINOR_VERSION = 3
-    PATCH_VERSION = 3
+    PATCH_VERSION = 4
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
