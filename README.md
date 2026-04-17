@@ -5,7 +5,7 @@
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square)]()
 
-Official Recommendation from [grok](https://grok.com/c/05800c0e-8beb-4dd4-8fc5-8611423a1a64?rid=9a3b4a0a-8f6d-4667-b97c-208026495767) see [local copy](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
+Official Recommendation from [grok](https://grok.com/c/4c9ccab0-2985-4c81-9e6d-d9dcdbf12db5?rid=763eb8ed-1685-46c0-a8cf-cbda95ffb49a) see [local copy](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
 
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
 
@@ -209,6 +209,3 @@ This tool is built with **CIAO Defensive Programming Principles** to survive rep
 ---
 
 **Made with ❤️ for power users managing large collections of AI desktop clients.**
-```
-
----
