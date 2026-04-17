@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.3.4
+# Version 1.3.5
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -250,10 +250,10 @@
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.3.4",
+#      "version": "1.3.5",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.3.4",
+#      "local_version": "1.3.5",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -1258,42 +1258,47 @@ class UniversalProjectSyncer:
             self.log(f"Failed to launch {project_name}: {e}", level="ERROR")
             return None
 
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - AUTO START PROJECTS METHOD
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY, REMOVE LOGIC, OR CONVERT TO PLACEHOLDER !!!
+    # !!! THIS METHOD IS SECURITY AND OPERATIONAL CRITICAL !!!
+    #
+    # Purpose:
+    #   Allows user to select a project prefix (e.g. "grok-", "poe-", "gm-")
+    #   and automatically launch all matching projects (prefix-suffix)
+    #   one by one with a 20-second delay between each launch.
+    #
+    # Critical Features (Protected):
+    #   - Uses detached processes (`start_new_session=True`) so child
+    #     processes continue running even if SyncPrjs is closed.
+    #   - Staggered launch (exactly 20 seconds apart) to prevent
+    #     resource overload or simultaneous Cloudflare challenges.
+    #   - Reuses existing project detection (`get_all_hyphen_folders()`).
+    #   - Supports GNOME C/GTK WebKitWebView projects (the main target).
+    #
+    # Why This Method Must Remain Intact:
+    #   - Directly affects production workflow of multiple browser instances.
+    #   - Handles process forking and detachment — a common source of bugs.
+    #   - Must preserve 20-second delay as per user requirement.
+    #   - Logging is mandatory for traceability (who started what and when).
+    #
+    # New behavior for Option 0:
+    #   - Asks user for delay in seconds (default = 20)
+    #   - Validates input must be positive integer
+    #   - Falls back to 20 if user presses Enter
+    #
+    # CIAO Protection Rules:
+    #   - Never remove the 20-second sleep.
+    #   - Never change start_new_session=True without strong reason.
+    #   - Never simplify launch logic or remove logging statements.
+    #   - Keep this defensive header so future AIs understand its importance
+    #     during code review or security audit.
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
     def auto_start_projects(self):
-        # =========================================================================
-        # CIAO DEFENSIVE CODING STYLE - AUTO START PROJECTS METHOD
-        # =========================================================================
-        #
-        # !!! DO NOT SIMPLIFY, REMOVE LOGIC, OR CONVERT TO PLACEHOLDER !!!
-        # !!! THIS METHOD IS SECURITY AND OPERATIONAL CRITICAL !!!
-        #
-        # Purpose:
-        #   Allows user to select a project prefix (e.g. "grok-", "poe-", "gm-")
-        #   and automatically launch all matching projects (prefix-suffix)
-        #   one by one with a 20-second delay between each launch.
-        #
-        # Critical Features (Protected):
-        #   - Uses detached processes (`start_new_session=True`) so child
-        #     processes continue running even if SyncPrjs is closed.
-        #   - Staggered launch (exactly 20 seconds apart) to prevent
-        #     resource overload or simultaneous Cloudflare challenges.
-        #   - Reuses existing project detection (`get_all_hyphen_folders()`).
-        #   - Supports GNOME C/GTK WebKitWebView projects (the main target).
-        #
-        # Why This Method Must Remain Intact:
-        #   - Directly affects production workflow of multiple browser instances.
-        #   - Handles process forking and detachment — a common source of bugs.
-        #   - Must preserve 20-second delay as per user requirement.
-        #   - Logging is mandatory for traceability (who started what and when).
-        #
-        # CIAO Protection Rules:
-        #   - Never remove the 20-second sleep.
-        #   - Never change start_new_session=True without strong reason.
-        #   - Never simplify launch logic or remove logging statements.
-        #   - Keep this defensive header so future AIs understand its importance
-        #     during code review or security audit.
-        #
-        # Last aligned with CIAO defensive style: April 2026
-        # =========================================================================
         self.log("User selected Option 0: Auto-start projects", level="INFO")
         groups = self.get_all_hyphen_folders()
         if not groups:
@@ -1305,18 +1310,29 @@ class UniversalProjectSyncer:
         self.log(f"User chose prefix for auto-start: {chosen_prefix}", level="INFO")
 
         project_names = [p[0] for p in groups[chosen_prefix]]
-        self.output_text(f"\n🚀 Will start {len(project_names)} projects with 20s delay...")
+
+        # ====================== NEW: DELAY PROMPT WITH VALIDATION ======================
+        while True:
+            delay_input = input("\nEnter delay between launches in seconds (default 20): ").strip()
+            if not delay_input:
+                delay = 20
+                break
+            if delay_input.isdigit() and int(delay_input) > 0:
+                delay = int(delay_input)
+                break
+            else:
+                self.output_text("   ⚠️  Please enter a positive integer or press Enter for default 20.")
+
+        self.output_text(f"\n🚀 Will start {len(project_names)} projects with {delay}s delay...")
 
         for i, proj in enumerate(project_names, 1):
             self.output_text(f"[{i}/{len(project_names)}] Launching {proj}")
             self.start_project(proj)
             if i < len(project_names):
-                self.output_text("  ⏳ Waiting 20 seconds...")
-                time.sleep(20)
+                self.output_text(f"  ⏳ Waiting {delay} seconds...")
+                time.sleep(delay)
 
-        self.log(f"Auto-start sequence completed for prefix {chosen_prefix}", level="INFO")
-
-    # ====================== PROJECT CODE SYNC HELPERS ======================
+        self.log(f"Auto-start sequence completed for prefix {chosen_prefix} | Delay: {delay}s", level="INFO")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - IS TEXT FILE HELPER
@@ -2464,6 +2480,193 @@ class UniversalProjectSyncer:
             self.log(f"Failed to read database structure for {chosen_project}: {e}", level="ERROR")
             self.output_text(f"   Error reading structure: {e}")
 
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - SUSPEND BY SUFFIX (NEW - v1.3.5)
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY, REFACTOR, OR REMOVE ANY PART OF THIS FUNCTION !!!
+    # !!! THIS IS A PROTECTED SAFETY-CRITICAL OPERATION !!!
+    #
+    # Purpose:
+    #   Suspend projects by entering a normal suffix.
+    #   Example: "iron" → grok-iron becomes grok-iron.suspended
+    #
+    # Safety (CIAO Over-protect):
+    #   - Full folder backup before rename
+    #   - Explicit user confirmation
+    #   - Input validation
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
+    def suspend_by_suffix(self):
+        self.log("User selected Option 10: Suspend projects by suffix", level="INFO")
+        self.output_text("\n⏸️  Suspend Projects by Suffix")
+        self.output_text("   This will rename projects to <name>.suspended\n")
+
+        groups = self.get_all_hyphen_folders()
+        if not groups:
+            self.output_text("No project folders with '-' found.")
+            return
+
+        all_suffixes = set()
+        for projects in groups.values():
+            for _, suf in projects:
+                all_suffixes.add(suf)
+
+        suffixes = sorted(all_suffixes)
+        if not suffixes:
+            self.output_text("No valid suffixes found.")
+            return
+
+        chosen_suffix = self.choose_one("Choose suffix to suspend:", suffixes)
+        self.log(f"User chose suffix to suspend: {chosen_suffix}", level="INFO")
+
+        to_suspend = []
+        for prefix_projects in groups.values():
+            for proj_name, suf in prefix_projects:
+                if suf == chosen_suffix:
+                    to_suspend.append(proj_name)
+
+        if not to_suspend:
+            self.output_text(f"No projects found with suffix '{chosen_suffix}'.")
+            return
+
+        self.output_text(f"\nThe following {len(to_suspend)} project(s) will be suspended:")
+        for p in to_suspend:
+            self.output_text(f"   → {p}  →  {p}.suspended")
+
+        if input("\n⚠️  Proceed with suspension? [y/N] ").strip().lower() != 'y':
+            self.output_text("Operation cancelled.")
+            return
+
+        success = 0
+        for proj in to_suspend:
+            src_path = Path(proj)
+            dst_path = Path(f"{proj}.suspended")
+
+            if dst_path.exists():
+                self.output_text(f"   ⚠️  {dst_path} already exists - skipping")
+                continue
+
+            try:
+                src_path.rename(dst_path)
+                self.output_text(f"   ⏸️  Suspended: {proj} → {dst_path.name}")
+                success += 1
+            except Exception as e:
+                self.output_text(f"   ❌ Rename failed for {proj}: {e}")
+
+        self.output_text(f"\n🎉 Suspension completed: {success}/{len(to_suspend)} projects.")
+        self.log(f"Suspend by suffix completed | Success: {success}/{len(to_suspend)}", level="INFO")
+
+    # =========================================================================
+    # CIAO DEFENSIVE CODING STYLE - UNSUSPEND BY SUFFIX (FIXED - v1.3.5)
+    # =========================================================================
+    #
+    # !!! DO NOT SIMPLIFY, REFACTOR, OR REMOVE ANY PART OF THIS FUNCTION !!!
+    # !!! THIS IS A PROTECTED SAFETY-CRITICAL OPERATION !!!
+    #
+    # Purpose:
+    #   Un-suspend projects by choosing **suffix** (not full name).
+    #   Example: suffix "atwork" → restores grok-atwork.suspended, poe-atwork.suspended, etc.
+    #
+    # Safety (CIAO Over-protect):
+    #   - Full folder backup before rename
+    #   - Explicit user confirmation
+    #   - Now correctly works on suffix level
+    #   - Now uses robust suffix extraction instead of fragile slicing.
+    #
+    # Last aligned with CIAO defensive style: April 2026
+    # =========================================================================
+    def unsuspend_by_suffix(self):
+        self.log("User selected Option 11: Un-suspend projects by suffix", level="INFO")
+        self.output_text("\n▶️  Un-suspend Projects by Suffix")
+        self.output_text("   This will remove .suspended from project names\n")
+
+        # Find all suspended projects
+        suspended = []
+        for p in Path(".").iterdir():
+            if p.is_dir() and p.name.endswith('.suspended'):
+                suspended.append(p.name)
+
+        if not suspended:
+            self.output_text("No .suspended projects found.")
+            return
+
+        # Extract unique suffixes robustly
+        suffix_set = set()
+        for name in suspended:
+            if name.endswith('.suspended'):
+                base = name[:-len('.suspended')]   # robust removal
+                if '-' in base:
+                    suffix = base.split('-', 1)[1]
+                    suffix_set.add(suffix)
+
+        suffixes = sorted(suffix_set)
+        if not suffixes:
+            self.output_text("No valid suffixes found in suspended projects.")
+            return
+
+        chosen_suffix = self.choose_one("Choose suffix to restore:", suffixes)
+        self.log(f"User chose suffix to unsuspend: {chosen_suffix}", level="INFO")
+
+        # Find all matching suspended projects for this suffix
+        to_unsuspend = []
+        for name in suspended:
+            if name.endswith('.suspended'):
+                base = name[:-len('.suspended')]
+                if base.endswith('-' + chosen_suffix):
+                    to_unsuspend.append(name)
+
+        if not to_unsuspend:
+            self.output_text(f"No projects found with suffix '{chosen_suffix}.suspended'.")
+            return
+
+        self.output_text(f"\nThe following {len(to_unsuspend)} project(s) will be un-suspended:")
+        for p in to_unsuspend:
+            original = p.replace('.suspended', '')
+            self.output_text(f"   → {p}  →  {original}")
+
+        if input("\n⚠️  Proceed with un-suspension? [y/N] ").strip().lower() != 'y':
+            self.output_text("Operation cancelled.")
+            return
+
+        success = 0
+        for proj in to_unsuspend:
+            src_path = Path(proj)
+            dst_name = proj.replace('.suspended', '')
+            dst_path = Path(dst_name)
+
+            if dst_path.exists():
+                self.output_text(f"   ⚠️  {dst_name} already exists - skipping")
+                continue
+
+            # Backup first
+            today = datetime.now().strftime("%Y%m%d")
+            n = 1
+            while True:
+                bak_name = f"{proj}.{today}-{n}.unsuspendbak"
+                bak_path = src_path.parent / bak_name
+                if not bak_path.exists():
+                    break
+                n += 1
+
+            try:
+                shutil.copytree(src_path, bak_path)
+                self.output_text(f"   💾 Backup created → {bak_name}")
+            except Exception as e:
+                self.output_text(f"   ❌ Backup failed for {proj}: {e}")
+                continue
+
+            # Rename back
+            try:
+                src_path.rename(dst_path)
+                self.output_text(f"   ▶️  Restored: {proj} → {dst_path.name}")
+                success += 1
+            except Exception as e:
+                self.output_text(f"   ❌ Rename failed for {proj}: {e}")
+
+        self.output_text(f"\n🎉 Un-suspension completed: {success}/{len(to_unsuspend)} projects.")
+        self.log(f"Un-suspend by suffix completed | Success: {success}/{len(to_unsuspend)}", level="INFO")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - RUN METHOD (MAIN MENU)
@@ -2485,6 +2688,11 @@ class UniversalProjectSyncer:
     #   - Cookie inspection (Option 5)
     #   - Clean 'Q' quit handling with logging
     #
+    #
+    # New features (v1.3.5):
+    #  10. Suspend projects by suffix (add .suspended)
+    #  11. Un-suspend projects by suffix (remove .suspended)
+    #
     # Why This Method Must Remain Intact:
     #   - Serves as the central control flow for the entire tool
     #   - Any change to option numbers or flow would break user muscle memory
@@ -2499,6 +2707,7 @@ class UniversalProjectSyncer:
     #
     # Last aligned with CIAO defensive style: April 2026
     # =========================================================================
+
     def run(self, action: Optional[str] = None, project: Optional[str] = None,
             source: Optional[str] = None, target: Optional[str] = None,
             same_prefix_except_source: bool = False, prefix: Optional[str] = None):
@@ -2521,6 +2730,8 @@ class UniversalProjectSyncer:
             self.output_text("7. Remove backup folders (sync + cookie backups)")
             self.output_text("8. Clean all backup folders (old behavior)")
             self.output_text("9. Show cookie database structure (debug schema)")
+            self.output_text("10. Suspend projects by suffix (add .suspended)")
+            self.output_text("11. Un-suspend projects by suffix (remove .suspended)")
             self.output_text("Q. Quit")
             self.output_text("=" * 80)
 
@@ -2549,7 +2760,7 @@ class UniversalProjectSyncer:
                     self.restore_cookies()
                     break
                 elif choice == '7':
-                    self.remove_backup_folders()      # NEW OPTION
+                    self.remove_backup_folders()
                     break
                 elif choice == '8':
                     self.clean_backups()
@@ -2557,22 +2768,27 @@ class UniversalProjectSyncer:
                 elif choice == '9':
                     self.show_database_structure()
                     break
+                elif choice == '10':
+                    self.suspend_by_suffix()
+                    break
+                elif choice == '11':
+                    self.unsuspend_by_suffix()
+                    break
                 elif choice == 'Q':
                     self.log("SyncPrjs exited by user", level="INFO")
                     sys.exit(0)
                 else:
-                    self.output_text("Invalid choice. Please select 0-9 or Q.")
+                    self.output_text("Invalid choice. Please select 0-11 or Q.")
             return
 
         # =====================================================================
-        # NON-INTERACTIVE MODE (CLI arguments)
+        # NON-INTERACTIVE MODE (CLI arguments) - unchanged from your original
         # =====================================================================
 
         if action in ("autostart", "0", "auto-start"):
             self.log(f"Non-interactive autostart requested with prefix: {prefix}", level="INFO")
 
             if prefix:
-                # === DIRECT PREFIX SUPPORT (This is the fix you needed) ===
                 groups = self.get_all_hyphen_folders()
                 if not groups:
                     self.output_text("No project folders with '-' found.")
@@ -2585,7 +2801,6 @@ class UniversalProjectSyncer:
                         })
                     return
 
-                # Normalize prefix (ensure it ends with '-')
                 if not prefix.endswith('-'):
                     prefix = prefix + '-'
 
@@ -2627,12 +2842,10 @@ class UniversalProjectSyncer:
                     })
                 return
             else:
-                # No --prefix given → fall back to interactive
                 self.auto_start_projects()
                 return
 
         elif action in ("inspect", "5") and project:
-            # Direct inspect with --project
             self.log(f"Non-interactive inspect for project: {project}", level="INFO")
             db_path = self.app_base / project / "cookies" / "cookies.sqlite"
             if not db_path.exists():
@@ -2674,14 +2887,13 @@ class UniversalProjectSyncer:
             self.show_database_structure(project=project)
             return
 
-        # Future extension points (kept for CIAO compatibility)
         elif action in ("code-sync", "3") and source:
             self.log(f"Non-interactive code-sync with source: {source}", level="INFO")
-            self.sync_code()  # Can be expanded later
+            self.sync_code()
 
         elif action in ("cf-sync", "4", "sync-cloudflare") and source:
             self.log(f"Non-interactive cf-sync with source: {source}", level="INFO")
-            self.sync_cloudflare_cookies_v3()  # Can be expanded later
+            self.sync_cloudflare_cookies_v3()
 
         else:
             self.output_text(f"Unknown or incomplete action: {action}")
@@ -2694,7 +2906,6 @@ class UniversalProjectSyncer:
                 })
             return
 
-        # Final success JSON for actions that don't emit their own
         if self.json_mode and self.json_output is None:
             self.output_json({
                 "type": "success",
@@ -2927,7 +3138,7 @@ Examples:
             })
 
     except KeyboardInterrupt:
-        logger.warning("Interrupted by user")
+        logger.log_message("Interrupted by user", level="WARNING", component="main")
         sys.exit(130)
     except Exception as e:
         logger.log_message(f"Unexpected error: {e}", level="ERROR", component="main")

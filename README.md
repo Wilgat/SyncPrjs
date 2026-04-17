@@ -1,6 +1,6 @@
 # SyncPrjs - Universal Multi-Prefix Project Manager
 
-[![Version](https://img.shields.io/badge/Version-1.3.3-blue?style=flat-square)](https://github.com/Wilgat/SyncPrjs)
+[![Version](https://img.shields.io/badge/Version-1.3.5-blue?style=flat-square)](https://github.com/Wilgat/SyncPrjs)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square)]()
@@ -8,7 +8,6 @@
 Official Recommendation from [grok](https://grok.com/c/05800c0e-8beb-4dd4-8fc5-8611423a1a64?rid=9a3b4a0a-8f6d-4667-b97c-208026495767) see [local copy](https://github.com/Wilgat/SyncPrjs/blob/main/RECOMMENDATION.md)
 
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
-
 
 This project follows strict [CIAO defensive programming principles](https://github.com/Wilgat/SyncPrjs/blob/main/CIAO-PRINCIPLES.md).
 
@@ -25,7 +24,8 @@ It is specifically designed for GNOME C/GTK applications using `WebKitWebView`, 
 - Safe Cloudflare-only cookie synchronization (v3)
 - Project code templating with automatic suffix renaming
 - Automatic backups before any cookie modification
-- Auto-start with staggered delay
+- **Auto-start with configurable delay**
+- **Suspend / Un-suspend projects by suffix**
 - Full `--quiet` and `--json` support for scripting
 
 **Powered by [ChronicleLogger 1.3.0+](https://pypi.org/project/ChronicleLogger/)**
@@ -61,15 +61,18 @@ sync-prjs
 This launches the full menu:
 
 ```
-0. Auto-start projects by prefix (20s delay)
+0. Auto-start projects by prefix (configurable delay)
 1. Sync Google cookies (Smart merge)
 2. Sync Google cookies (Missing folders only)
 3. Sync project code
 4. Sync Cloudflare cookies by prefix (v3 - safe)
 5. Inspect cookies (Google + Cloudflare + Others)
 6. Restore cookies from backup
-7. Clean all backup folders
-8. Show cookie database structure (debug schema)
+7. Remove backup folders (sync + cookie backups)
+8. Clean all backup folders (old behavior)
+9. Show cookie database structure (debug schema)
+10. Suspend projects by suffix (add .suspended)
+11. Un-suspend projects by suffix (remove .suspended)
 Q. Quit
 ```
 
@@ -92,33 +95,21 @@ sync-prjs help --quiet
 #### Auto-start Projects
 
 ```bash
-# Start all projects under a specific prefix with 20-second delay
+# Start all projects under a specific prefix (will prompt for delay)
 sync-prjs autostart --prefix gm
-sync-prjs autostart --prefix grok
-sync-prjs autostart --prefix poe
-sync-prjs autostart --prefix cf
 ```
 
 #### Cookie Inspection
 
 ```bash
-# Inspect a specific project
 sync-prjs inspect --project gm-wilgat
-
-# JSON output (perfect for scripting)
 sync-prjs inspect --project gm-wilgat --json
-
-# Quiet inspection
-sync-prjs inspect --project gm-wilgat --quiet
 ```
 
 #### Google Cookie Sync
 
 ```bash
-# Smart merge (recommended - preserves non-Google cookies)
 sync-prjs google-sync
-
-# Only new/missing project folders
 sync-prjs google-missing
 ```
 
@@ -138,7 +129,6 @@ sync-prjs code-sync --source grok-iron
 
 ```bash
 sync-prjs schema --project gm-wilgat
-sync-prjs schema --project gm-wilgat --json
 ```
 
 #### Restore & Maintenance
@@ -157,7 +147,7 @@ sync-prjs clean-backups
 | `sync-prjs`                   | Interactive       | -                                    | Full menu |
 | `sync-prjs help`              | Non-interactive   | `--quiet`, `--json`                  | Show this help |
 | `sync-prjs about`             | Non-interactive   | `--quiet`, `--json`                  | Version + diagnostics |
-| `sync-prjs autostart`         | Non-interactive   | `--prefix <gm\|grok\|poe\|cf...>`    | Auto-launch projects |
+| `sync-prjs autostart`         | Non-interactive   | `--prefix <gm\|grok\|...>`           | Auto-launch projects (prompts for delay) |
 | `sync-prjs inspect`           | Non-interactive   | `--project <name>`, `--json`         | Cookie statistics |
 | `sync-prjs google-sync`       | Non-interactive   | -                                    | Smart Google cookie merge |
 | `sync-prjs google-missing`    | Non-interactive   | -                                    | Copy to missing folders only |
@@ -169,29 +159,11 @@ sync-prjs clean-backups
 
 ---
 
-### JSON Mode Examples (for scripting/automation)
+### JSON Mode Examples
 
 ```bash
-# Get cookie stats in JSON
 sync-prjs inspect --project gm-wilgat --json
-
-# About information
 sync-prjs about --json
-```
-
-Example output:
-```json
-{
-  "type": "inspect",
-  "command": "inspect",
-  "project": "gm-wilgat",
-  "success": true,
-  "total_cookies": 107,
-  "google_cookies": 89,
-  "cloudflare_cookies": 2,
-  "other_cookies": 16,
-  "timestamp": "20260412-014500"
-}
 ```
 
 ---
@@ -200,9 +172,7 @@ Example output:
 
 All projects must follow: `<prefix>-<suffix>`
 
-**Common prefixes:**
-- `gm-` → Google Master (source of truth for Google cookies)
-- `grok-`, `poe-`, `cf-`, `gacc-`, `yt-`, etc.
+**Common prefixes:** `gm-`, `grok-`, `poe-`, `cf-`, `yt-`, etc.
 
 ---
 
@@ -212,22 +182,20 @@ All projects must follow: `<prefix>-<suffix>`
 ~/.app/<full-project-name>/cookies/cookies.sqlite
 ```
 
-Example: `~/.app/gm-wilgat/cookies/cookies.sqlite`
-
 ---
 
 ## Important Notes
 
 - Always run SyncPrjs from the directory containing your prefix-suffix project folders.
-- Cookie backups are created automatically before any modification using the safe format: `~/.app/{project}.YYYYMMDD-N.bak/`
-- Cloudflare sync (v3) only touches Cloudflare-related cookies.
-- Google sync uses `gm-*` projects as the authoritative source.
+- **New in 1.3.5**: You can now suspend/un-suspend groups of projects by suffix (useful for temporarily disabling projects).
+- Cookie backups are created automatically before any modification.
+- Auto-start now allows custom delay (default 20 seconds).
 
 ---
 
 ## Development Philosophy
 
-This tool is built with **CIAO Defensive Programming Principles v2.9.1**  (Short form: [CIAO](https://github.com/cloudgen/ciao) ) to survive repeated AI-assisted modifications without losing critical safety features.
+This tool is built with **CIAO Defensive Programming Principles** to survive repeated AI-assisted modifications.
 
 **Requires ChronicleLogger 1.3.0+**
 
@@ -236,11 +204,11 @@ This tool is built with **CIAO Defensive Programming Principles v2.9.1**  (Short
 ## Links
 
 - [ChronicleLogger on PyPI](https://pypi.org/project/ChronicleLogger/)
-- [CIAO Philosophy](https://github.com/Wilgat/ciao)
-- Related projects: [github-client](https://github.com/cloudgen/github-client), [pix-client](https://github.com/Wilgat/pix-client), [poe-client](https://github.com/Wilgat/poe-client),
-[pix-client](https://github.com/Wilgat/pix-client)
+- [CIAO Philosophy](https://github.com/cloudgen/ciao)
 
 ---
 
 **Made with ❤️ for power users managing large collections of AI desktop clients.**
 ```
+
+---

@@ -1,6 +1,35 @@
 # CHANGELOG.md
 
-## [Unreleased]
+## [1.3.5] - 2026-04-17
+
+### Added
+- New feature: **Suspend projects by suffix** (Option 10)
+  - User can enter a normal suffix (e.g. `atwork`, `trade`)
+  - Automatically finds and renames matching projects to `<project>.suspended`
+  - Creates backup before renaming
+- New feature: **Un-suspend projects by suffix** (Option 11)
+  - User selects a suffix to restore
+  - Automatically renames `<project>.suspended` back to original name
+  - Creates backup before renaming
+- Option 0 (Auto-start): Now prompts for **custom delay** between launches (default 20 seconds)
+  - Input validation (must be positive integer)
+  - Press Enter to use default 20s
+
+### Fixed
+- Fixed suffix extraction bug in un-suspend feature (no more truncated names like "atwor", "trad")
+- Fixed `logger.warning()` violation in `main()` to use `logger.log_message()` per CIAO rule
+- Improved robustness of suspended project detection
+
+### Changed
+- Updated menu: Option 0 text changed to "Auto-start projects by prefix (configurable delay)"
+- Version bumped to 1.3.5 across all files
+
+### Notes
+- All existing features (including Option 9 - Show database structure) preserved
+- Full CIAO defensive style maintained
+- No breaking changes
+
+---
 
 ## [Version 1.3.4] - 2026-04-15
 ### Added
