@@ -2,7 +2,7 @@
 
 # =============================================================================
 # SyncPrjs - Universal Multi-Prefix Project Manager
-# Version 1.3.5
+# Version 1.4.0
 # =============================================================================
 # STRICT CIAO DEFENSIVE CODING STYLE - FULLY APPLIED
 # =============================================================================
@@ -250,10 +250,10 @@
 #      "type": "about",
 #      "command": "about",
 #      "success": true,
-#      "version": "1.3.5",
+#      "version": "1.4.0",
 #      "installed": "true",
 #      "global_version": "not found",
-#      "local_version": "1.3.5",
+#      "local_version": "1.4.0",
 #      "python_version": "3.12.12",
 #      "user": "leolio",
 #      "in_python": "True",
@@ -369,8 +369,8 @@ class UniversalProjectSyncer:
 
     CLASSNAME = "UniversalProjectSyncer"
     MAJOR_VERSION = 1
-    MINOR_VERSION = 3
-    PATCH_VERSION = 4
+    MINOR_VERSION = 4
+    PATCH_VERSION = 0
 
     @staticmethod
     def class_version():
@@ -1183,8 +1183,7 @@ class UniversalProjectSyncer:
 
                 self.log(f"Detailed cookie view displayed for {chosen_project}", level="INFO")
 
-    # ====================== AUTO START ======================
-    def start_project(self, project_name: str) -> Optional[subprocess.Popen]:
+    def start_project(self, project_name: str, extra_env: Optional[dict] = None) -> Optional[subprocess.Popen]:
         # =========================================================================
         # CIAO DEFENSIVE CODING STYLE - START PROJECT METHOD
         # =========================================================================
@@ -1227,7 +1226,6 @@ class UniversalProjectSyncer:
         #
         # Last aligned with CIAO defensive style: April 2026
         # =========================================================================
-
         project_path = Path(project_name).resolve()
         if not project_path.is_dir():
             self.log(f"Project {project_name} is not a directory", level="ERROR")
@@ -1249,15 +1247,26 @@ class UniversalProjectSyncer:
             self.log(f"No start script found for {project_name}", level="WARNING")
             return None
 
+        # Prepare environment with optional extra variables
+        env = os.environ.copy()
+        if extra_env:
+            env.update(extra_env)
+
         try:
-            popen = subprocess.Popen(cmd, cwd=str(project_path), stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.DEVNULL, start_new_session=True)
-            self.log(f"Launched {project_name} (PID {popen.pid})", level="INFO")
+            popen = subprocess.Popen(cmd, 
+                                   cwd=str(project_path), 
+                                   stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL, 
+                                   start_new_session=True,
+                                   env=env)
+            
+            shutdown_val = env.get("SHUTDOWN", "0")
+            self.log(f"Launched {project_name} (PID {popen.pid}) | SHUTDOWN={shutdown_val}", 
+                     level="INFO")
             return popen
         except Exception as e:
             self.log(f"Failed to launch {project_name}: {e}", level="ERROR")
             return None
-
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - AUTO START PROJECTS METHOD
     # =========================================================================
@@ -1289,6 +1298,13 @@ class UniversalProjectSyncer:
     #   - Validates input must be positive integer
     #   - Falls back to 20 if user presses Enter
     #
+    # New Feature (2026-04-30):
+    #   After delay prompt, user is asked for SHUTDOWN=N seconds.
+    #   Default = 0 (never shutdown).
+    #   Every launched project receives:
+    #     - SHUTDOWN=N
+    #     - JSON=1
+    #
     # CIAO Protection Rules:
     #   - Never remove the 20-second sleep.
     #   - Never change start_new_session=True without strong reason.
@@ -1296,7 +1312,7 @@ class UniversalProjectSyncer:
     #   - Keep this defensive header so future AIs understand its importance
     #     during code review or security audit.
     #
-    # Last aligned with CIAO defensive style: April 2026
+    # Last aligned with CIAO defensive style: April 30, 2026
     # =========================================================================
     def auto_start_projects(self):
         self.log("User selected Option 0: Auto-start projects", level="INFO")
@@ -1311,7 +1327,7 @@ class UniversalProjectSyncer:
 
         project_names = [p[0] for p in groups[chosen_prefix]]
 
-        # ====================== NEW: DELAY PROMPT WITH VALIDATION ======================
+        # ====================== DELAY PROMPT ======================
         while True:
             delay_input = input("\nEnter delay between launches in seconds (default 20): ").strip()
             if not delay_input:
@@ -1323,16 +1339,41 @@ class UniversalProjectSyncer:
             else:
                 self.output_text("   ⚠️  Please enter a positive integer or press Enter for default 20.")
 
+        # ====================== NEW: SHUTDOWN PROMPT ======================
+        while True:
+            shutdown_input = input("\nEnter SHUTDOWN time in seconds (0 = never shutdown, default 0): ").strip()
+            if not shutdown_input:
+                shutdown_sec = 0
+                break
+            if shutdown_input.isdigit() and int(shutdown_input) >= 0:
+                shutdown_sec = int(shutdown_input)
+                break
+            else:
+                self.output_text("   ⚠️  Please enter a non-negative integer or press Enter for default 0.")
+
         self.output_text(f"\n🚀 Will start {len(project_names)} projects with {delay}s delay...")
+        if shutdown_sec > 0:
+            self.output_text(f"   ⏰ Each project will auto-shutdown after {shutdown_sec} seconds.")
+        else:
+            self.output_text("   ⏰ No auto-shutdown (SHUTDOWN=0)")
 
         for i, proj in enumerate(project_names, 1):
             self.output_text(f"[{i}/{len(project_names)}] Launching {proj}")
-            self.start_project(proj)
+            
+            # Pass SHUTDOWN and JSON=1 to each project
+            extra_env = {
+                "SHUTDOWN": str(shutdown_sec),
+                "JSON": "1"
+            }
+            
+            self.start_project(proj, extra_env=extra_env)
+            
             if i < len(project_names):
                 self.output_text(f"  ⏳ Waiting {delay} seconds...")
                 time.sleep(delay)
 
-        self.log(f"Auto-start sequence completed for prefix {chosen_prefix} | Delay: {delay}s", level="INFO")
+        self.log(f"Auto-start sequence completed for prefix {chosen_prefix} | "
+                 f"Delay: {delay}s | Shutdown: {shutdown_sec}s", level="INFO")
 
     # =========================================================================
     # CIAO DEFENSIVE CODING STYLE - IS TEXT FILE HELPER
@@ -2481,7 +2522,7 @@ class UniversalProjectSyncer:
             self.output_text(f"   Error reading structure: {e}")
 
     # =========================================================================
-    # CIAO DEFENSIVE CODING STYLE - SUSPEND BY SUFFIX (NEW - v1.3.5)
+    # CIAO DEFENSIVE CODING STYLE - SUSPEND BY SUFFIX
     # =========================================================================
     #
     # !!! DO NOT SIMPLIFY, REFACTOR, OR REMOVE ANY PART OF THIS FUNCTION !!!
@@ -2559,7 +2600,7 @@ class UniversalProjectSyncer:
         self.log(f"Suspend by suffix completed | Success: {success}/{len(to_suspend)}", level="INFO")
 
     # =========================================================================
-    # CIAO DEFENSIVE CODING STYLE - UNSUSPEND BY SUFFIX (FIXED - v1.3.5)
+    # CIAO DEFENSIVE CODING STYLE - UNSUSPEND BY SUFFIX
     # =========================================================================
     #
     # !!! DO NOT SIMPLIFY, REFACTOR, OR REMOVE ANY PART OF THIS FUNCTION !!!
@@ -2968,8 +3009,8 @@ def main():
     # =========================================================================
     appname = 'SyncPrjs'
     MAJOR_VERSION = 1
-    MINOR_VERSION = 3
-    PATCH_VERSION = 4
+    MINOR_VERSION = 4
+    PATCH_VERSION = 0
 
     logger = ChronicleLogger(logname=appname)
     appname = logger.logName()    
