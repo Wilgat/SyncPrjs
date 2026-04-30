@@ -5,7 +5,7 @@
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square)]()
 
-**Official Recommendation from [grok](https://grok.com)** — see [local copy](RECOMMENDATION.md)
+**Official Recommendation from [grok](https://grok.com/share/c2hhcmQtNA_0726ccc0-a784-4ad2-a1e5-d16de705977e)** — see [local copy](RECOMMENDATION.md)
 
 **A robust, CIAO-defensive command-line tool for managing hundreds of prefix-suffix AI desktop clients.**
 
